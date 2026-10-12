@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Character Sheet</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='3' y='3' width='10' height='8' fill='%23D97757'/%3E%3Crect x='5' y='5' width='1' height='3' fill='%23161616'/%3E%3Crect x='10' y='5' width='1' height='3' fill='%23161616'/%3E%3Crect x='4' y='11' width='2' height='2' fill='%23D97757'/%3E%3Crect x='10' y='11' width='2' height='2' fill='%23D97757'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="fonts/fonts.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.min.js",
+    "three/addons/controls/OrbitControls.js": "./vendor/three/addons/OrbitControls.js",
+    "three/addons/exporters/OBJExporter.js": "./vendor/three/addons/OBJExporter.js",
+    "three/addons/exporters/GLTFExporter.js": "./vendor/three/addons/GLTFExporter.js"
+  }
+}
+</script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #ECEAE5; color: #1F1E1C; font-family: 'Geist', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #1F1E1C; } a:hover { color: #C4633F; }
+  three-d-stage:not(:defined) { visibility: hidden; }
+  .wrap { display: grid; grid-template-columns: 340px minmax(0, 1fr); height: 100vh; }
+  aside { display: flex; flex-direction: column; border-right: 1px solid rgba(0,0,0,.07); background: #F6F5F1; min-height: 0; }
+  .head { padding: 20px 20px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .head h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+  .head p { margin: 0; font: 400 12px/1.4 'Geist Mono', monospace; color: #6B6862; }
+  .head a { font-size: 12px; font-weight: 500; text-decoration: none; }
+  .grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 0 20px 16px; }
+  .grid button { appearance: none; border: 1px solid rgba(0,0,0,.08); background: #fff; border-radius: 9px; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; padding: 4px; font: 500 10px/1 'Geist', sans-serif; color: #55524C; min-width: 0; overflow: hidden; }
+  .grid button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .grid button i { width: 20px; height: 20px; border-radius: 5px; box-shadow: inset 0 -2px 0 rgba(0,0,0,.12); }
+  .grid button.on { border-color: #1F1E1C; box-shadow: inset 0 0 0 1px #1F1E1C; color: #1F1E1C; }
+  .spec { flex: 1; overflow: auto; padding: 20px; border-top: 1px solid rgba(0,0,0,.07); display: flex; flex-direction: column; gap: 18px; }
+  .spec h2 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -.02em; }
+  .spec .sub { margin-top: 4px; font-size: 13px; color: #6B6862; }
+  dl { margin: 0; display: grid; grid-template-columns: 96px 1fr; gap: 10px 12px; font-size: 13px; }
+  dt { font: 400 11px/1.6 'Geist Mono', monospace; color: #8A867E; text-transform: uppercase; letter-spacing: .05em; }
+  dd { margin: 0; line-height: 1.45; text-wrap: pretty; }
+  .sw { display: inline-flex; align-items: center; gap: 8px; font-family: 'Geist Mono', monospace; }
+  .sw i { width: 14px; height: 14px; border-radius: 3px; }
+  .lbl { font: 400 11px/1 'Geist Mono', monospace; color: #8A867E; text-transform: uppercase; letter-spacing: .05em; }
+  .seg { display: flex; padding: 3px; gap: 2px; background: #fff; border: 1px solid rgba(0,0,0,.08); border-radius: 10px; margin-top: 8px; }
+  .seg button { flex: 1; appearance: none; border: 0; background: transparent; font: 500 12px/1 'Geist', sans-serif; color: #55524C; padding: 8px 6px; border-radius: 7px; cursor: pointer; }
+  .seg button.on { background: #1F1E1C; color: #fff; }
+  .note { font-size: 12px; color: #75726B; line-height: 1.45; margin: 8px 0 0; text-wrap: pretty; }
+  .stage { position: relative; min-width: 0; }
+  three-d-stage { width: 100%; height: 100vh; }
+  .rules { padding: 16px 0 0; border-top: 1px solid rgba(0,0,0,.07); font-size: 12px; color: #6B6862; line-height: 1.5; display: flex; flex-direction: column; gap: 6px; }
+  .rules b { color: #1F1E1C; font-weight: 500; }
+  @media (max-width: 760px) { .wrap { grid-template-columns: 1fr; grid-template-rows: auto 60vh; height: auto; } three-d-stage { height: 60vh; } aside { order: 2; } .stage { order: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside>
+    <div class="head">
+      <h1>Agent characters</h1>
+      <p>10 roles · 1 unit = 1 cm · matte paint + black eyes</p>
+      <a href="index.html">← Back to office</a>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="spec"><div id="spec" style="display:flex;flex-direction:column;gap:18px"></div>
+<div class="rules">
+      <div class="lbl">Shared rules</div>
+      <div><b>Shape:</b> stacked rectangular blocks, 0.09 cm chamfer on every edge, no curves.</div>
+      <div><b>Face:</b> eyes are flat black rectangles on the front face. No mouth.</div>
+      <div><b>Color:</b> one paint color per role, matte (roughness 0.62).</div>
+      <div><b>Rig:</b> upper body, eyes, arm_L / arm_R pivot at the shoulder, legs pivot at the hip.</div>
+    </div>
+    </div>
+  </aside>
+  <div class="stage"><three-d-stage name="agent-developer" background="#ECEAE5"></three-d-stage></div>
+</div>
+<script src="js/three-d-stage.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { ROLES, buildAgent, animateAgent, roleDims } from './js/agents.js';
+
+const stage = document.querySelector('three-d-stage');
+await stage.ready;
+let current = null, motion = 'static';
+const MOTIONS = [['static', 'Static'], ['idle', 'Idle'], ['work', 'Working'], ['walk', 'Walking']];
+const grid = document.getElementById('grid'), spec = document.getElementById('spec');
+
+ROLES.forEach(r => {
+  const b = document.createElement('button'); b.dataset.id = r.id;
+  b.innerHTML = `<i style="background:${r.color}"></i><span>${r.name}</span>`;
+  b.onclick = () => { location.hash = r.id; };
+  grid.appendChild(b);
+});
+
+function show(id) {
+  const r = ROLES.find(x => x.id === id) || ROLES[1];
+  grid.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.id === r.id));
+  const a = buildAgent(r);
+  const wrap = new THREE.Group(); wrap.name = `agent_${r.id}`; wrap.scale.setScalar(.01);
+  a.root.name = 'rig'; wrap.add(a.root);
+  animateAgent(a, 0, 'static');
+  stage.setAttribute('name', `agent-${r.id}`);
+  stage.setObject(wrap);
+  current = a;
+  const d = roleDims(r);
+  spec.innerHTML = `<div><h2>${r.name}</h2><div class="sub">${r.role}</div></div>
+    <dl>
+      <dt>Paint</dt><dd><span class="sw"><i style="background:${r.color}"></i>${r.color.toUpperCase()}</span></dd>
+      <dt>Overall</dt><dd>${d.w.toFixed(1)} × ${d.h.toFixed(1)} × ${d.d.toFixed(1)} cm <span style="color:#8A867E">(W×H×D, arms incl.)</span></dd>
+      <dt>Body</dt><dd>${r.W} × ${r.H} × ${r.D} cm${r.notch ? `, ${r.notch} cm corner notch` : ''}</dd>
+      <dt>Legs</dt><dd>${r.legs === 'duo' ? '2 chunky legs' : '4 thin legs in two pairs'}, ${r.legH} cm</dd>
+      <dt>Eyes</dt><dd>${r.eyes.gap ? `2 × ${r.eyes.w} × ${r.eyes.h} cm, ${r.eyes.gap} cm apart` : `1 visor, ${r.eyes.w} × ${r.eyes.h} cm`}</dd>
+      <dt>Signature</dt><dd>${r.feature}</dd>
+      <dt>Work loop</dt><dd>${r.motion}</dd>
+    </dl>
+    <div><div class="lbl">Preview motion</div>
+      <div class="seg" id="seg">${MOTIONS.map(([k, l]) => `<button data-m="${k}" class="${k === motion ? 'on' : ''}">${l}</button>`).join('')}</div>
+      <p class="note">Downloads (bottom right of the viewer) capture the current pose. Switch to Static for a clean rest pose.</p></div>`;
+  spec.querySelectorAll('#seg button').forEach(b => b.onclick = () => {
+    motion = b.dataset.m; spec.querySelectorAll('#seg button').forEach(x => x.classList.toggle('on', x === b));
+  });
+}
+
+addEventListener('hashchange', () => show(location.hash.slice(1)));
+show(location.hash.slice(1) || 'developer');
+
+const clock = new THREE.Clock();
+(function loop() {
+  requestAnimationFrame(loop);
+  if (current) animateAgent(current, clock.getElapsedTime(), motion);
+})();
+</script>
+</body>
+</html>

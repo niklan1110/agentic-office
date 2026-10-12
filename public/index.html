@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Office</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='3' y='3' width='10' height='8' fill='%23D97757'/%3E%3Crect x='5' y='5' width='1' height='3' fill='%23161616'/%3E%3Crect x='10' y='5' width='1' height='3' fill='%23161616'/%3E%3Crect x='4' y='11' width='2' height='2' fill='%23D97757'/%3E%3Crect x='10' y='11' width='2' height='2' fill='%23D97757'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+<script>
+  // The first visit to a project with no team goes to the welcome page; links from setup come back with ?from=setup.
+  if (!new URLSearchParams(location.search).has('from')) {
+    fetch('api/team', { cache: 'no-store' }).then((r) => r.json()).then((d) => { if (!d.team) location.replace('setup.html'); }).catch(() => {});
+  }
+</script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.min.js",
+    "three/addons/controls/OrbitControls.js": "./vendor/three/addons/OrbitControls.js",
+    "three/addons/exporters/OBJExporter.js": "./vendor/three/addons/OBJExporter.js",
+    "three/addons/exporters/GLTFExporter.js": "./vendor/three/addons/GLTFExporter.js"
+  }
+}
+</script>
+</head>
+<body>
+<div id="scene"></div>
+<div id="tags"></div>
+<div class="bubble" id="bubble"><small>Manager</small><span></span></div>
+
+<div class="bar">
+  <div class="title">
+    <h1>Agent Office</h1>
+    <p><button type="button" id="conn" class="conn" aria-expanded="false" aria-controls="connPanel" title="Connection details">starting…</button><span class="sum" id="summary">10 agents</span></p>
+  </div>
+  <div class="controls">
+    <a class="btn" href="setup.html#agents" title="Add agents, name them and assign their skills">Edit team</a>
+    <form class="task" id="taskForm">
+      <input id="taskInput" placeholder="Give the team a task…" autocomplete="off">
+      <button id="taskBtn" type="submit" title="Call the team together and send this task to your Claude Code session">Call meeting</button>
+    </form>
+    <div class="seg" id="motion">
+      <button data-m="live" class="on">Live</button>
+      <button data-m="static">Static</button>
+    </div>
+    <button class="btn on" id="meet" title="Call a meeting whenever you give Claude a new task"><span class="sw"></span>Meet on task</button>
+  </div>
+</div>
+
+<section class="connpanel" id="connPanel" hidden aria-live="polite"></section>
+
+<aside class="panel">
+  <header><span>Agents <span id="count"></span></span><a href="characters.html">Character sheet ↗</a></header>
+  <div class="taskcard" id="taskcard"></div>
+  <div class="list" id="list"></div>
+</aside>
+
+<div class="legend" id="legend"></div>
+<div class="hint">Click an agent to set its status · drag to orbit · scroll to zoom</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "name": "agent-office",
+  "version": "1.0.0-rc.1",
+  "description": "Connects Claude Code to Agent Office: finds the office server of your project by itself, shows your team working in a 3D office, runs the tasks you type there, and adds a team launched mid-session as agents.",
+  "author": {
+    "name": "niklan1110"
+  },
+  "license": "MIT",
+  "userConfig": {
+    "officeUrl": {
+      "type": "string",
+      "title": "Office URL (optional)",
+      "description": "Leave empty: the plugin finds the office of the session's project by itself. Set a local address (http://127.0.0.1:<port>) only to force one office for every project.",
+      "default": ""
+    },
+    "showTask": {
+      "type": "boolean",
+      "title": "Show task text",
+      "description": "Send the first 200 characters of each prompt you submit, so the office can show the task in its meeting. Off sends that a task started, with no text.",
+      "default": true
+    },
+    "showMessages": {
+      "type": "boolean",
+      "title": "Show message text",
+      "description": "Send the first 200 characters of each message between agents, for the speech bubbles. Off sends who talked to whom, with no text.",
+      "default": true
+    },
+    "registerTeam": {
+      "type": "boolean",
+      "title": "Add a newly launched team",
+      "description": "When you launch a team while this session is open, add its agents to this session right away (new sessions read them from .claude/agents/ by themselves).",
+      "default": true
+    },
+    "acceptTasks": {
+      "type": "boolean",
+      "title": "Take tasks from the office page",
+      "description": "Start each task typed on the office page as a prompt in this session. Off leaves page tasks to other sessions of the project.",
+      "default": true
+    }
+  }
+}

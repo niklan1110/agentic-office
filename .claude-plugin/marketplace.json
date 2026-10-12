@@ -1,0 +1,14 @@
+{
+  "name": "agent-office",
+  "description": "Agent Office: build a team of Claude Code agents from skills and watch it work in a 3D office.",
+  "owner": {
+    "name": "niklan1110"
+  },
+  "plugins": [
+    {
+      "name": "agent-office",
+      "source": "./plugin",
+      "description": "Connects Claude Code sessions to the Agent Office of their project: live 3D view, tasks typed in the office, and a launched team added mid-session."
+    }
+  ]
+}

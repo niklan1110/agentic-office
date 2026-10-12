@@ -1,0 +1,303 @@
+// The Agent Office server, one per project. It serves the web app (public/), takes
+// events and heartbeats from the Claude Code plugin, streams them to the page, hands
+// the page's tasks to the project's sessions, and launches teams into the project.
+// docs/spec.md lists the API.
+//
+// Local only: it refuses connections that are not from the loopback address, Host
+// headers that are not loopback (DNS rebinding), and POSTs from other origins (a web
+// page in your browser cannot drive it).
+
+import { readFileSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
+import http from 'node:http'
+import os from 'node:os'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { createCatalog } from './catalog.mjs'
+import { removeDiscovery, writeDiscovery } from './discovery.mjs'
+import { GROUPS } from './groups.mjs'
+import { createHub, samePath } from './hub.mjs'
+import { CHARACTERS, LIMITS, MODELS, RECOMMENDED, createTeamStore } from './team.mjs'
+import { validate } from '../public/js/protocol.js'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
+const PUBLIC = path.join(here, '..', 'public')
+export const VERSION = JSON.parse(readFileSync(path.join(here, '..', 'package.json'), 'utf8')).version
+const MAX_BODY = 8 * 1024
+const MAX_TEAM_BODY = 64 * 1024
+const LOOPBACK_ADDRESS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
+const LOOPBACK_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/
+const CONTENT_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.avif': 'image/avif',
+  '.woff2': 'font/woff2',
+}
+
+const sendText = (res, status, text) => {
+  res.writeHead(status, { 'content-type': 'text/plain; charset=utf-8' })
+  res.end(text)
+}
+const sendJson = (res, status, body) => {
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
+  res.end(JSON.stringify(body))
+}
+
+function readBody(req, limit) {
+  return new Promise((resolve, reject) => {
+    let size = 0
+    const chunks = []
+
+    req.on('data', (chunk) => {
+      size += chunk.length
+      if (size > limit) return reject(Object.assign(new Error('too large'), { status: 413 }))
+      chunks.push(chunk)
+    })
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+    req.on('error', reject)
+  })
+}
+
+// The JSON body of a POST, or undefined after answering with the reason it was refused.
+async function jsonBody(req, res, limit = MAX_BODY) {
+  if (!(req.headers['content-type'] ?? '').startsWith('application/json')) return void sendText(res, 415, 'expected application/json')
+
+  try {
+    return JSON.parse(await readBody(req, limit))
+  } catch (err) {
+    return void sendText(res, err.status ?? 400, err.status ? 'body too large' : 'bad JSON')
+  }
+}
+
+// The skill sources for a project: what is already there, your personal skills, then the collections given.
+export function skillSources(projectDir, collections = [], home = os.homedir()) {
+  return [
+    { dir: path.join(projectDir, '.claude', 'skills'), kind: 'project' },
+    { dir: path.join(home, '.claude', 'skills'), kind: 'personal' },
+    ...collections.map((dir) => ({ dir: path.resolve(dir), kind: 'collection' })),
+  ]
+}
+
+export function createServer({ projectDir = process.cwd(), collections = [], home = os.homedir(), backlogSize = 200, now = Date.now } = {}) {
+  const project = path.resolve(projectDir)
+  const catalog = createCatalog(skillSources(project, collections, home))
+  const team = createTeamStore({ projectDir: project, catalog })
+  const backlog = []
+  const clients = new Set()
+  let url = ''
+
+  const broadcast = (name, data) => {
+    const line = `${name ? `event: ${name}\n` : ''}data: ${JSON.stringify(data)}\n\n`
+
+    for (const client of clients) client.write(line)
+  }
+  const hub = createHub({ project, version: VERSION, now, onChange: () => broadcast('status', hub.status()) })
+
+  async function ingest(req, res) {
+    const sender = req.headers['x-agent-office-project']
+
+    if (typeof sender === 'string' && sender && !samePath(sender, project)) {
+      req.resume()
+
+      return sendJson(res, 409, { error: 'project-mismatch', project })
+    }
+
+    const body = await jsonBody(req, res)
+
+    if (body === undefined) return
+
+    const checked = validate(body)
+
+    if (checked.error) return sendText(res, 400, checked.error)
+
+    const event = { ...checked.value, at: now() }
+
+    backlog.push(event)
+    if (backlog.length > backlogSize) backlog.shift()
+    broadcast('', event)
+
+    return sendText(res, 202, 'accepted')
+  }
+
+  async function heartbeat(req, res) {
+    const body = await jsonBody(req, res)
+
+    if (body === undefined) return
+
+    const beat = hub.heartbeat(body)
+
+    if (beat.error) return sendText(res, 400, beat.error)
+
+    return sendJson(res, 200, { ...beat, project, serverVersion: VERSION })
+  }
+
+  async function taskResult(req, res, id) {
+    const body = await jsonBody(req, res)
+
+    if (body === undefined) return
+
+    const done = hub.result(id, typeof body.session === 'string' ? body.session : '', body)
+
+    return done.error ? sendText(res, 409, done.error) : sendJson(res, 200, { state: done.task.state })
+  }
+
+  async function queueTask(req, res) {
+    const body = await jsonBody(req, res)
+
+    if (body === undefined) return
+
+    const queued = hub.queue(body.text)
+
+    return queued.error ? sendText(res, queued.error.startsWith('too many') ? 503 : 400, queued.error) : sendJson(res, 202, { id: queued.task.id })
+  }
+
+  async function listSkills(res) {
+    const skills = await catalog.list()
+    const marked = await Promise.all(skills.map(async ({ dir, ...s }) => ({ ...s, installed: s.source === 'project' || (await team.installed(s.name)) })))
+
+    return sendJson(res, 200, { project, sources: catalog.sources, groups: GROUPS, skills: marked })
+  }
+
+  async function readTeam(res) {
+    return sendJson(res, 200, {
+      project,
+      team: await team.read(),
+      recommended: RECOMMENDED,
+      characters: CHARACTERS,
+      models: MODELS,
+      limits: LIMITS,
+    })
+  }
+
+  async function launchTeam(req, res) {
+    const body = await jsonBody(req, res, MAX_TEAM_BODY)
+
+    if (body === undefined) return
+
+    let launched
+    try {
+      launched = await team.launch(body)
+    } catch (err) {
+      return sendText(res, 500, `could not launch the team: ${err?.message ?? err}`)
+    }
+
+    if (launched.error) return sendText(res, 400, launched.error)
+    broadcast('team', launched.team)
+
+    return sendJson(res, 200, { ...launched, project, connected: hub.status().connected })
+  }
+
+  function stream(req, res) {
+    res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' })
+    res.write('retry: 2000\n\n')
+    res.write(`event: backlog\ndata: ${JSON.stringify(backlog)}\n\n`)
+    res.write(`event: status\ndata: ${JSON.stringify(hub.status())}\n\n`)
+    clients.add(res)
+
+    // A ping keeps proxies from closing the stream, and the status keeps "connected" honest as sessions go quiet.
+    const ping = setInterval(() => res.write(`event: status\ndata: ${JSON.stringify(hub.status())}\n\n`), 5000)
+
+    req.on('close', () => {
+      clearInterval(ping)
+      clients.delete(res)
+    })
+  }
+
+  async function serveFile(pathname, res) {
+    let relative
+    try {
+      relative = pathname === '/' ? 'index.html' : decodeURIComponent(pathname).slice(1)
+    } catch {
+      return sendText(res, 400, 'bad path')
+    }
+
+    const file = path.resolve(PUBLIC, relative)
+
+    if (!file.startsWith(PUBLIC + path.sep)) return sendText(res, 404, 'not found')
+
+    try {
+      const body = await readFile(file)
+
+      res.writeHead(200, {
+        'content-type': CONTENT_TYPES[path.extname(file)] ?? 'application/octet-stream',
+        'x-content-type-options': 'nosniff',
+        'cache-control': 'no-cache',
+      })
+      res.end(body)
+    } catch {
+      sendText(res, 404, 'not found')
+    }
+  }
+
+  const server = http.createServer((req, res) => {
+    if (!LOOPBACK_ADDRESS.has(req.socket.remoteAddress)) return sendText(res, 403, 'local only')
+    if (!LOOPBACK_HOST.test(req.headers.host ?? '')) return sendText(res, 403, 'bad host')
+    if (req.method === 'POST' && req.headers.origin !== undefined && req.headers.origin !== `http://${req.headers.host}`) {
+      return sendText(res, 403, 'cross-origin requests are refused')
+    }
+
+    const { pathname } = new URL(req.url ?? '/', 'http://localhost')
+    const route = `${req.method} ${pathname}`
+    const taskResultPath = /^\/api\/tasks\/(\d+)\/result$/.exec(pathname)
+
+    switch (route) {
+      case 'GET /api/hello': return sendJson(res, 200, { app: 'agent-office', version: VERSION, project, url })
+      case 'GET /api/status': return sendJson(res, 200, hub.status())
+      case 'GET /api/stream': return stream(req, res)
+      case 'GET /api/skills': return void listSkills(res)
+      case 'GET /api/team': return void readTeam(res)
+      case 'POST /api/events': return void ingest(req, res)
+      case 'POST /api/sessions/heartbeat': return void heartbeat(req, res)
+      case 'POST /api/tasks': return void queueTask(req, res)
+      case 'POST /api/launch': return void launchTeam(req, res)
+      default:
+        if (req.method === 'POST' && taskResultPath) return void taskResult(req, res, taskResultPath[1])
+        if (req.method === 'GET' && !pathname.startsWith('/api/')) return void serveFile(pathname, res)
+
+        return sendText(res, pathname.startsWith('/api/') ? 404 : 405, pathname.startsWith('/api/') ? 'no such endpoint' : 'method not allowed')
+    }
+  })
+
+  return {
+    server,
+    hub,
+    team,
+    project,
+    get url() {
+      return url
+    },
+
+    // Listens on `port`, or the next free one unless `strictPort`; then records the address for the plugin.
+    async listen({ port = 7777, strictPort = false, host = '127.0.0.1', discovery = true } = {}) {
+      for (let p = port; ; p++) {
+        try {
+          await new Promise((resolve, reject) => {
+            server.once('error', reject)
+            server.listen(p, host, () => {
+              server.off('error', reject)
+              resolve()
+            })
+          })
+          break
+        } catch (err) {
+          if (err.code !== 'EADDRINUSE' || strictPort || p >= port + 20) throw err
+        }
+      }
+
+      url = `http://${host}:${server.address().port}`
+      if (discovery) await writeDiscovery(project, { app: 'agent-office', url, version: VERSION, project, startedAt: now() })
+
+      return url
+    },
+
+    async close() {
+      for (const client of clients) client.end()
+      await removeDiscovery(project).catch(() => {})
+      await new Promise((resolve) => server.close(() => resolve()))
+    },
+  }
+}

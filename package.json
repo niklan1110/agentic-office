@@ -1,0 +1,29 @@
+{
+  "name": "agent-office",
+  "version": "1.0.0-rc.1",
+  "description": "Build a team of Claude Code agents from skill collections, launch it into your project, and watch it work in a 3D office.",
+  "keywords": ["claude-code", "agents", "subagents", "skills", "three.js", "visualization"],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "agent-office": "bin/agent-office.mjs"
+  },
+  "files": [
+    "bin/",
+    "server/",
+    "public/",
+    "plugin/",
+    ".claude-plugin/",
+    "docs/spec.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node bin/agent-office.mjs",
+    "doctor": "node bin/agent-office.mjs doctor",
+    "test": "node --test \"test/*.test.mjs\""
+  }
+}
