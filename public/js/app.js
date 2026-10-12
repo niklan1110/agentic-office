@@ -653,13 +653,16 @@ $('panelHead').onclick = (e) => {
 };
 
 // Nothing to draw while the tab is hidden: saves the battery and the fan.
-document.addEventListener('visibilitychange', () => { if (RECORD) return; renderer.setAnimationLoop(document.hidden ? null : frame); if (!document.hidden) clock.getDelta(); });
+document.addEventListener('visibilitychange', () => { if (RECORD) return; renderer.setAnimationLoop(document.hidden ? null : liveFrame); if (!document.hidden) clock.getDelta(); });
 
 // ---- Frame loop ----------------------------------------------------------------------------------
 const clock = new THREE.Clock();
 const lerpAngle = (a, b, k) => a + ((((b - a + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * k;
 const SPEED = 7.5;
 const bubble = $('bubble'), bubbleTxt = bubble.querySelector('span');
+
+// The live loop. three.js calls it with a timestamp, which must not be taken for a fixed step.
+const liveFrame = () => frame();
 
 // Recording mode (?record, for the README animation): the loop does not run by itself;
 // the recorder steps it a fixed time at a time, so the clip is smooth however slow the machine.
@@ -724,4 +727,4 @@ function frame(fixedDt) {
   renderer.render(scene, camera);
 }
 if (RECORD) window.__agentOffice.step = (dt, n = 1) => { for (let i = 0; i < n; i++) frame(dt); };
-else renderer.setAnimationLoop(frame);
+else renderer.setAnimationLoop(liveFrame);
