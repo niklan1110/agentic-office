@@ -3,7 +3,7 @@
 // plugin sends; tasks typed here go to the office server, which hands them to a session.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { ROLES, STATUS, STATUS_ORDER, buildAgent, animateAgent, buildStatusIndicator } from './agents.js';
+import { ROLES, STATUS, STATUS_ORDER, CHARACTER_STYLES, buildAgent, animateAgent, buildStatusIndicator } from './agents.js';
 import { apply, createState, findRole, roleOfAgent, roleStats, roleStatuses, tokens } from './model.js';
 import { buildGraph, routeAt, routeBetween } from './nav.js';
 import { buildOffice3, officeMap, LAYOUTS, PAINTABLE, ITEM_NAMES, makeItem } from './office-v3.js';
@@ -89,7 +89,7 @@ let latest = roleStatuses(state, Date.now());
 let lastLive = {};
 
 const agents = ROLES.map((r, i) => {
-  const a = buildAgent(r);
+  const a = buildAgent(r, look.characters);
   a.idx = i;
   a.at = 'home_' + r.id;
   const sp = SPOTS[a.at];
@@ -548,12 +548,16 @@ function renderThemes() {
   if (!el) return;
   const pick = (kind, id, on, name, blurb, swatch) => `<button type="button" role="menuitemradio" aria-checked="${on}" data-${kind}="${id}">
     ${swatch}<span><b>${esc(name)}</b><small>${esc(blurb)}</small></span></button>`;
-  el.innerHTML = `<h3>Layout</h3>${LAYOUTS.map((l) => pick('l', l.id, l.id === MAP.layout, l.name, l.blurb, `<span class="lay lay-${l.id}" aria-hidden="true"></span>`)).join('')}
+  el.innerHTML = `<h3>Characters</h3>${CHARACTER_STYLES.map((c) => pick('s', c.id, c.id === (look.characters ?? 'classic'), c.name, c.blurb, `<span class="sty sty-${c.id}" aria-hidden="true"></span>`)).join('')}
+    <h3>Layout</h3>${LAYOUTS.map((l) => pick('l', l.id, l.id === MAP.layout, l.name, l.blurb, `<span class="lay lay-${l.id}" aria-hidden="true"></span>`)).join('')}
     <h3>Colours</h3>${THEMES.map((t) => pick('t', t.id, t.id === theme, t.name, t.blurb, `<span class="sw3" aria-hidden="true">${t.swatch.map((c) => `<i style="background:${c}"></i>`).join('')}</span>`)).join('')}
     <h3>Your own colours</h3><div class="custom">${Object.keys(PAINTABLE).map((k) => `<label><input type="color" data-c="${k}" value="${colors[k] ?? PAINTABLE[k]}"><span>${COLOR_LABELS[k]}</span></label>`).join('')}
     <button type="button" class="linkish" id="resetColors" ${Object.keys(colors).length ? '' : 'disabled'}>Use the theme's</button></div>`;
   el.querySelectorAll('[data-t]').forEach((b) => { b.onclick = () => { setTheme(b.dataset.t); saveLook({ theme: b.dataset.t }); }; });
   el.querySelectorAll('[data-l]').forEach((b) => { b.onclick = () => chooseLayout(b.dataset.l); });
+  el.querySelectorAll('[data-s]').forEach((b) => {
+    b.onclick = async () => { if (b.dataset.s === (look.characters ?? 'classic')) return; await saveLook({ characters: b.dataset.s }); location.reload(); };
+  });
   el.querySelectorAll('input[data-c]').forEach((inp) => {
     inp.oninput = () => { colors = { ...colors, [inp.dataset.c]: inp.value }; applyTheme(THREE, { scene, hemi, key, win }, theme, colors); };
     inp.onchange = () => { saveLook({ colors: { [inp.dataset.c]: inp.value } }); renderThemes(); };
@@ -578,7 +582,7 @@ setTheme(look.theme ?? 'studio', look.colors ?? {});
 source?.addEventListener('office', (m) => {
   let s;
   try { s = JSON.parse(m.data); } catch { return; }
-  if (s.layout && s.layout !== MAP.layout) return location.reload();
+  if ((s.layout && s.layout !== MAP.layout) || (s.characters && s.characters !== (look.characters ?? 'classic'))) return location.reload();
   setTheme(s.theme, s.colors ?? {});
 });
 

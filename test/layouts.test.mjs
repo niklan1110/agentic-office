@@ -43,3 +43,23 @@ for (const { id } of LAYOUTS) {
 test('an unknown layout is the open plan', () => {
   assert.equal(officeMap('nope').layout, 'open')
 })
+
+test('the back rooms fill the back wall in a different order in every layout', async () => {
+  const { ROOMS } = await import('../public/js/office-map.js')
+  const orders = new Set()
+
+  for (const { id } of LAYOUTS) {
+    const { rooms } = officeMap(id)
+    let x = -50.5
+
+    assert.deepEqual([...rooms.order].sort(), Object.keys(ROOMS).sort(), `${id} has every room once`)
+    for (const room of rooms.order) {
+      assert.equal(ROOMS[room].x0 + rooms.shift[room], x, `${id}: ${room} starts where the last one ended`)
+      x += ROOMS[room].w
+    }
+    assert.equal(x, 40, `${id}: the rooms fill the wall`)
+    orders.add(rooms.order.join())
+  }
+
+  assert.equal(orders.size, LAYOUTS.length)
+})

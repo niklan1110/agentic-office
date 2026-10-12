@@ -23,6 +23,39 @@ export const LAYOUTS = Object.freeze([
 export const layoutById = (id) => LAYOUTS.find((l) => l.id === id) ?? LAYOUTS[0]
 
 // A desk (or a seat at a table) at x, z turned by ry; the chair is SEAT in front of it.
+// The rooms along the back wall, as they stand in the original office: left edge and width.
+// Glass-walled rooms need glass where they meet a neighbour.
+export const ROOMS = Object.freeze({
+  manager: { x0: -50.5, w: 20.5, glazed: true },
+  conference: { x0: -30, w: 34, glazed: true },
+  kitchen: { x0: 4, w: 22, glazed: false },
+  lounge: { x0: 26, w: 14, glazed: false },
+})
+const ROOM_ORDER = {
+  open: ['manager', 'conference', 'kitchen', 'lounge'],
+  pairs: ['kitchen', 'conference', 'lounge', 'manager'],
+  cubicles: ['manager', 'kitchen', 'conference', 'lounge'],
+  offices: ['lounge', 'kitchen', 'conference', 'manager'],
+  pods: ['conference', 'lounge', 'manager', 'kitchen'],
+  bench: ['lounge', 'manager', 'conference', 'kitchen'],
+}
+
+// Where each room goes in a given order: how far it moves along x, and where glass walls stand.
+export function placeRooms(order) {
+  const shift = {}
+  const glassAt = []
+  let x = -50.5
+
+  order.forEach((id, i) => {
+    if (i > 0 && (ROOMS[id].glazed || ROOMS[order[i - 1]].glazed)) glassAt.push(x)
+    shift[id] = x - ROOMS[id].x0
+    x += ROOMS[id].w
+  })
+  if (ROOMS[order.at(-1)].glazed) glassAt.push(x)
+
+  return { order, shift, glassAt }
+}
+
 const desk = (id, x, z, ry = 0, kind = 'desk') => ({ id, x, z, ry, kind, seat: [x - Math.sin(ry) * SEAT, z - Math.cos(ry) * SEAT] })
 
 // Rectangles agents must not walk through: [x0, z0, x1, z1].
@@ -94,9 +127,12 @@ function layoutPlan(id) {
 // Everything the office and its routes need for one layout.
 export function officeMap(layoutId = 'open') {
   const plan = layoutPlan(layoutById(layoutId).id)
+  const rooms = placeRooms(ROOM_ORDER[layoutById(layoutId).id])
+  const mv = (room, pts) => pts.map(([x, z]) => [x + rooms.shift[room], z]) // a room's points, moved with it
+  const dx = rooms.shift
   const Z = plan.aisle
   const NODES = {
-    cL: [-46, ZC], cMgr: [-34, ZC], cConf: [-12.5, ZC], cKit: [15, ZC], cR: [25.5, ZC], cLounge: [33, ZC],
+    cL: [-46, ZC], cMgr: [-34 + dx.manager, ZC], cConf: [-12.5 + dx.conference, ZC], cKit: [15 + dx.kitchen, ZC], cR: [25.5, ZC], cLounge: [33 + dx.lounge, ZC],
     mL: [-46, Z], mR: [25.5, Z], mX: [35, Z],
   }
   // A corridor node at x, made on demand: c@x on the back corridor, m@x on the aisle.
@@ -120,18 +156,18 @@ export function officeMap(layoutId = 'open') {
   }
 
   // The rooms along the back wall: the same in every layout.
-  S('home_manager', 'cMgr', [[-34, -25.5], [-42, -25.5]], 0)
+  S('home_manager', 'cMgr', mv('manager', [[-34, -25.5], [-42, -25.5]]), 0)
   const MGR = [-13, -27]
-  S('stage', 'cConf', [[-12.5, -14.5], MGR], 0)
-  const seat = (id, x, z) => S('seat_' + id, 'cConf', [[-12.5, -14.5], [x, z]], Math.atan2(MGR[0] - x, MGR[1] - z))
+  S('stage', 'cConf', mv('conference', [[-12.5, -14.5], MGR]), 0)
+  const seat = (id, x, z) => S('seat_' + id, 'cConf', mv('conference', [[-12.5, -14.5], [x, z]]), Math.atan2(MGR[0] - x, MGR[1] - z))
   ;[-26, -19.5, -13, -6.5, 0].forEach((x, i) => seat(['developer', 'reviewer', 'qa', 'researcher', 'designer'][i], x, -21))
   ;[-22.75, -16.25, -9.75, -3.25].forEach((x, i) => seat(['devops', 'writer', 'analyst', 'security'][i], x, -16.5))
-  S('coffee', 'cKit', [[15, -15], [12, -24.8]], PI, { item: 'coffee', label: 'Making coffee', wait: 3.2, anim: 'work' })
-  S('fridge', 'cKit', [[15, -15], [6.8, -24.8]], PI, { item: 'can', label: 'Raiding the fridge', wait: 2.4, anim: 'idle' })
-  S('cooler', 'cKit', [[15, -15], [24.3, -25.3]], PI, { item: 'water', label: 'Getting a glass of water', wait: 2.6, anim: 'idle' })
-  S('vending', 'cLounge', [[33, -15], [33.5, -17]], PI / 2, { item: 'snack', label: 'At the vending machine', wait: 2.6, anim: 'work' })
-  S('sofaL', 'cLounge', [[33, -15], [27.8, -15], [27.8, -25], [30, -25]], 0, { label: 'Resting on the sofa', wait: 7, anim: 'idle' })
-  S('sofaR', 'cLounge', [[33, -15], [27.8, -15], [27.8, -25], [36, -25]], 0, { label: 'Resting on the sofa', wait: 7, anim: 'idle' })
+  S('coffee', 'cKit', mv('kitchen', [[15, -15], [12, -24.8]]), PI, { item: 'coffee', label: 'Making coffee', wait: 3.2, anim: 'work' })
+  S('fridge', 'cKit', mv('kitchen', [[15, -15], [6.8, -24.8]]), PI, { item: 'can', label: 'Raiding the fridge', wait: 2.4, anim: 'idle' })
+  S('cooler', 'cKit', mv('kitchen', [[15, -15], [24.3, -25.3]]), PI, { item: 'water', label: 'Getting a glass of water', wait: 2.6, anim: 'idle' })
+  S('vending', 'cLounge', mv('lounge', [[33, -15], [33.5, -17]]), PI / 2, { item: 'snack', label: 'At the vending machine', wait: 2.6, anim: 'work' })
+  S('sofaL', 'cLounge', mv('lounge', [[33, -15], [27.8, -15], [27.8, -25], [30, -25]]), 0, { label: 'Resting on the sofa', wait: 7, anim: 'idle' })
+  S('sofaR', 'cLounge', mv('lounge', [[33, -15], [27.8, -15], [27.8, -25], [36, -25]]), 0, { label: 'Resting on the sofa', wait: 7, anim: 'idle' })
   const [cx, cz] = plan.copier
   S('copier', at('m', cx), [[cx, cz - 4.8]], 0, { item: 'paper', label: 'Printing at the copier', wait: 3.2, anim: 'work' })
   S('shelf', 'mX', [[35, 9]], PI / 2, { item: 'book', label: 'Browsing the bookshelf', wait: 3, anim: 'think' })
@@ -157,7 +193,7 @@ export function officeMap(layoutId = 'open') {
   ]
 
   return {
-    layout: layoutById(layoutId).id, plan, DESKS, NODES, EDGES, SPOTS, obstacles,
+    layout: layoutById(layoutId).id, plan, rooms, DESKS, NODES, EDGES, SPOTS, obstacles,
     ERRANDS: [['cooler', 3], ['coffee', 3], ['fridge', 1], ['vending', 1], ['sofaL', 1], ['sofaR', 1], ['copier', 1.2], ['shelf', 1]],
   }
 }

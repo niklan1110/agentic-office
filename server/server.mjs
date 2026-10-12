@@ -91,6 +91,7 @@ export function skillSources(projectDir, collections = [], home = os.homedir(), 
 
 // The office's look, per project: a colour theme, a layout, and custom colours over the theme.
 const COLOR_KEYS = ['wall', 'floor', 'partition']
+const STYLES = ['classic', 'bots'] // public/js/agents.js, CHARACTER_STYLES
 const HEX = /^#[0-9a-f]{6}$/i
 function cleanSettings(s) {
   const colors = {}
@@ -100,6 +101,7 @@ function cleanSettings(s) {
   return {
     theme: THEMES.some((t) => t.id === s?.theme) ? s.theme : 'studio',
     layout: LAYOUTS.some((l) => l.id === s?.layout) ? s.layout : 'open',
+    characters: STYLES.includes(s?.characters) ? s.characters : 'classic',
     colors,
   }
 }
@@ -138,6 +140,7 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
 
     if (body === undefined) return
     if (body.theme !== undefined && !THEMES.some((t) => t.id === body.theme)) return sendText(res, 400, `theme must be one of ${THEMES.map((t) => t.id).join(', ')}`)
+    if (body.characters !== undefined && !STYLES.includes(body.characters)) return sendText(res, 400, `characters must be one of ${STYLES.join(', ')}`)
     if (body.layout !== undefined && !LAYOUTS.some((l) => l.id === body.layout)) return sendText(res, 400, `layout must be one of ${LAYOUTS.map((l) => l.id).join(', ')}`)
     if (body.colors !== undefined && (typeof body.colors !== 'object' || body.colors === null || Object.entries(body.colors).some(([k, v]) => !COLOR_KEYS.includes(k) || (v !== null && !HEX.test(v))))) {
       return sendText(res, 400, `colors may set ${COLOR_KEYS.join(', ')} to a colour like #A1B2C3, or null`)

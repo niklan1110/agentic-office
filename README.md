@@ -83,7 +83,7 @@ Found a skill on GitHub? Click **Add skills**, then paste a link to a repository
   </tr>
 </table>
 
-Pick the floor plan for your team: an open plan, desks in pairs, a Matrix-style cubicle farm, glass-walled private offices, round tables or one long bench. Agents walk to their own seats in each one.
+Pick the floor plan for your team: an open plan, desks in pairs, a Matrix-style cubicle farm, glass-walled private offices, round tables or one long bench. Each layout also rearranges the manager's office, the conference room, the kitchen and the lounge, and agents find their way to their own seats in every one.
 
 ### Six colour themes, or your own
 
@@ -100,7 +100,7 @@ Pick the floor plan for your team: an open plan, desks in pairs, a Matrix-style 
   </tr>
 </table>
 
-Any layout works with any colours, and you can pick your own colours for the walls, floor and partitions on top of a theme. Change it all when you launch, or any time from **Look** in the office. Press <kbd>H</kbd> to hide the controls for a clean screenshot like these.
+Any layout works with any colours, and you can pick your own colours for the walls, floor and partitions on top of a theme. **Look** in the office also switches the characters between Classic (blocky, flat black eyes) and Bots (screen faces with glowing eyes). Change it all when you launch, or any time from **Look**. Press <kbd>H</kbd> to hide the controls for a clean screenshot like these.
 
 ### Every office, and your phone
 

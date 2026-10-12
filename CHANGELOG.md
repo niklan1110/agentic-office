@@ -7,8 +7,8 @@
 - A prompt that people paste into Claude Code to set it all up.
 
 ### Look and sharing
-- Original characters: screen-faced bots with glowing eyes, and an indigo accent. Nothing is derived from Anthropic's brand.
-- Six layouts: Open plan, Pairs, Cubicle farm, Private offices, Round tables and Long table. A test walks every route in every layout to check that no one passes through furniture.
+- Two character styles: Classic (blocky bodies with flat black eyes) and Bots (screen faces with glowing eyes). An indigo accent replaces the orange.
+- Six layouts: Open plan, Pairs, Cubicle farm, Private offices, Round tables and Long table. Each also rearranges the back rooms (manager, conference, kitchen, lounge). A test walks every route in every layout to check that no one passes through furniture.
 - Six colour themes (Warm studio, Late night, Cozy cabin, Glass HQ, Neon arcade, Matrix), plus your own colours for walls, floor and partitions.
 - A clean view for screenshots: <kbd>H</kbd>, or `?clean` in the link.
 - The Offices page lists every office on the computer.
