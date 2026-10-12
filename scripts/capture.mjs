@@ -24,7 +24,14 @@ const SHOTS = [
   { name: 'themes-night', theme: 'night', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
   { name: 'themes-cabin', theme: 'cabin', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
   { name: 'themes-glass', theme: 'glass', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
+  { name: 'themes-matrix', theme: 'matrix', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
   { name: 'themes-neon', theme: 'neon', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
+  { name: 'layout-open', layout: 'open', theme: 'studio', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
+  { name: 'layout-pairs', layout: 'pairs', theme: 'cabin', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
+  { name: 'layout-cubicles', layout: 'cubicles', theme: 'matrix', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
+  { name: 'layout-offices', layout: 'offices', theme: 'glass', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
+  { name: 'layout-pods', layout: 'pods', theme: 'neon', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
+  { name: 'layout-bench', layout: 'bench', theme: 'night', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
   { name: 'phone', theme: 'night', url: '/?from=setup&speed=6', w: 390, h: 844, scale: 3, mobile: true, wait: 9000 },
   { name: 'setup-agents', theme: 'studio', url: '/setup.html#agents', w: 1400, h: 900, scale: 1.5, wait: 2500 },
   { name: 'setup-new-agent', url: '/setup.html#agents/new', w: 1400, h: 900, scale: 1.5, wait: 2500 },
@@ -39,7 +46,7 @@ for (let i = 0; i < 50; i++) {
 }
 
 async function shoot(shot) {
-  if (shot.theme) await fetch(`${base}/api/office`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ theme: shot.theme }) })
+  if (shot.theme || shot.layout) await fetch(`${base}/api/office`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ theme: shot.theme, layout: shot.layout ?? 'open' }) })
 
   const target = await (await fetch(`http://127.0.0.1:${PORT}/json/new?about:blank`, { method: 'PUT' })).json()
   const ws = new WebSocket(target.webSocketDebuggerUrl)

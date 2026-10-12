@@ -15,7 +15,7 @@ Build a team of agents from skills, launch it into your project, and see who is 
 ![three.js](https://img.shields.io/badge/three.js-0.184-000?style=flat-square&logo=threedotjs)
 ![For Claude Code](https://img.shields.io/badge/for-Claude_Code-555?style=flat-square)
 
-[Quick start](#quick-start) · [Features](#features) · [Themes](#five-office-themes) · [Troubleshooting](#troubleshooting) · [Share your office](#share-your-office)
+[Quick start](#quick-start) · [Features](#features) · [Layouts](#six-layouts) · [Troubleshooting](#troubleshooting) · [Share your office](#share-your-office)
 
 </div>
 
@@ -68,22 +68,39 @@ Then, in the browser:
 
 Found a skill on GitHub? Click **Add skills**, then paste a link to a repository, a folder or a `SKILL.md`, or drop a `.zip`. Pick the skills you want. They go into your personal library (`~/.agent-office/skills`) and show up in every project.
 
-### Five office themes
+### Six layouts
 
 <table>
   <tr>
-    <td width="33%"><img src="docs/media/themes-studio.webp" alt="Warm studio theme: soft daylight on warm wood"><br><sub><b>Warm studio</b></sub></td>
-    <td width="33%"><img src="docs/media/themes-night.webp" alt="Late night theme: dark office, glowing monitors and desk lamps"><br><sub><b>Late night</b></sub></td>
-    <td width="33%"><img src="docs/media/themes-neon.webp" alt="Neon arcade theme: purple dusk with pink and cyan light"><br><sub><b>Neon arcade</b></sub></td>
+    <td width="33%"><img src="docs/media/layout-open.webp" alt="Open plan layout: two rows of desks in one big room"><br><sub><b>Open plan</b></sub></td>
+    <td width="33%"><img src="docs/media/layout-pairs.webp" alt="Pairs layout: desks pushed together in twos, partners face to face"><br><sub><b>Pairs</b></sub></td>
+    <td width="33%"><img src="docs/media/layout-cubicles.webp" alt="Cubicle farm layout in the Matrix colours: grey walled cubicles in green light"><br><sub><b>Cubicle farm</b></sub></td>
   </tr>
   <tr>
-    <td width="33%"><img src="docs/media/themes-cabin.webp" alt="Cozy cabin theme: honey-coloured wood and warm sunlight"><br><sub><b>Cozy cabin</b></sub></td>
-    <td width="33%"><img src="docs/media/themes-glass.webp" alt="Glass HQ theme: cool, bright and clean"><br><sub><b>Glass HQ</b></sub></td>
-    <td width="33%" align="center"><sub>Press <kbd>H</kbd> in the office to hide the controls for a clean screenshot like these.</sub></td>
+    <td width="33%"><img src="docs/media/layout-offices.webp" alt="Private offices layout: everyone in a glass-walled room of their own"><br><sub><b>Private offices</b></sub></td>
+    <td width="33%"><img src="docs/media/layout-pods.webp" alt="Round tables layout: pods of three around shared tables, in Neon arcade colours"><br><sub><b>Round tables</b></sub></td>
+    <td width="33%"><img src="docs/media/layout-bench.webp" alt="Long table layout: one long startup bench at night"><br><sub><b>Long table</b></sub></td>
   </tr>
 </table>
 
-Pick a theme when you launch, or any time from **Theme** in the office.
+Pick the floor plan for your team: an open plan, desks in pairs, a Matrix-style cubicle farm, glass-walled private offices, round tables or one long bench. Agents walk to their own seats in each one.
+
+### Six colour themes, or your own
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/media/themes-studio.webp" alt="Warm studio colours: soft daylight on warm wood"><br><sub><b>Warm studio</b></sub></td>
+    <td width="33%"><img src="docs/media/themes-night.webp" alt="Late night colours: dark office, glowing monitors and desk lamps"><br><sub><b>Late night</b></sub></td>
+    <td width="33%"><img src="docs/media/themes-neon.webp" alt="Neon arcade colours: purple dusk with pink and cyan light"><br><sub><b>Neon arcade</b></sub></td>
+  </tr>
+  <tr>
+    <td width="33%"><img src="docs/media/themes-cabin.webp" alt="Cozy cabin colours: honey-coloured wood and warm sunlight"><br><sub><b>Cozy cabin</b></sub></td>
+    <td width="33%"><img src="docs/media/themes-glass.webp" alt="Glass HQ colours: cool, bright and clean"><br><sub><b>Glass HQ</b></sub></td>
+    <td width="33%"><img src="docs/media/themes-matrix.webp" alt="Matrix colours: green phosphor glow and fluorescent grey"><br><sub><b>Matrix</b></sub></td>
+  </tr>
+</table>
+
+Any layout works with any colours, and you can pick your own colours for the walls, floor and partitions on top of a theme. Change it all when you launch, or any time from **Look** in the office. Press <kbd>H</kbd> to hide the controls for a clean screenshot like these.
 
 ### Every office, and your phone
 
@@ -103,7 +120,7 @@ Pick a theme when you launch, or any time from **Theme** in the office.
 | Click a character | Its details, tool calls and tokens |
 | <kbd>H</kbd> | Hide the controls (clean screenshot) |
 | **Call meeting** | Brief the team and send the task to Claude Code |
-| **Theme** · **Phone** · **Offices** | Look, watch from your phone, all your offices |
+| **Look** · **Phone** · **Offices** | Layout and colours, watch from your phone, all your offices |
 | `/office` in Claude Code | What this session sees, and what to fix |
 
 ## Troubleshooting

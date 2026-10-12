@@ -40,10 +40,15 @@ function phoneGet(url, cookie = '') {
   })
 }
 
-test('the theme is saved per project and shows in the summary', async () => {
-  assert.deepEqual(await (await fetch(`${baseA}/api/office`)).json(), { theme: 'studio' })
+test('the look (theme, layout, colours) is saved per project and the theme shows in the summary', async () => {
+  assert.deepEqual(await (await fetch(`${baseA}/api/office`)).json(), { theme: 'studio', layout: 'open', colors: {} })
   assert.equal((await post(baseA, '/api/office', { theme: 'nope' })).status, 400)
-  assert.deepEqual(await (await post(baseA, '/api/office', { theme: 'night' })).json(), { theme: 'night' })
+  assert.equal((await post(baseA, '/api/office', { layout: 'castle' })).status, 400)
+  assert.equal((await post(baseA, '/api/office', { colors: { wall: 'red' } })).status, 400)
+  assert.equal((await post(baseA, '/api/office', { colors: { ceiling: '#112233' } })).status, 400)
+  assert.deepEqual(await (await post(baseA, '/api/office', { theme: 'night' })).json(), { theme: 'night', layout: 'open', colors: {} })
+  assert.deepEqual(await (await post(baseA, '/api/office', { layout: 'cubicles', colors: { wall: '#112233', floor: '#445566' } })).json(), { theme: 'night', layout: 'cubicles', colors: { wall: '#112233', floor: '#445566' } })
+  assert.deepEqual((await (await post(baseA, '/api/office', { colors: { wall: null } })).json()).colors, { floor: '#445566' })
 
   const summary = await (await fetch(`${baseA}/api/summary`)).json()
 

@@ -6,6 +6,7 @@
 import { openLibraryDialog } from './library-dialog.js';
 import { ROLE_INFO } from './roles.js';
 import { THEMES } from './themes.js';
+import { LAYOUTS } from './office-map.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -490,7 +491,9 @@ function renderLaunch() {
         </ul>
         ${noSkills.length ? `<p class="warn">${esc(noSkills.map((a) => a.name).join(', '))} ${noSkills.length === 1 ? 'has' : 'have'} no skills. ${noSkills.length === 1 ? 'It' : 'They'} will still work, as general agents.</p>` : ''}
         ${problems.map((x) => `<p class="warn">${x}</p>`).join('')}
-        <h2 class="theme-h">Office look</h2>
+        <h2 class="theme-h">Office layout</h2>
+        <div class="themes" role="radiogroup" aria-label="Office layout">${LAYOUTS.map((l) => `<label class="themecard"><input type="radio" name="layout" value="${l.id}" ${l.id === (server.layout ?? 'open') ? 'checked' : ''}><span class="lay lay-${l.id}" aria-hidden="true"></span><span><b>${esc(l.name)}</b><small>${esc(l.blurb)}</small></span></label>`).join('')}</div>
+        <h2 class="theme-h">Office colours</h2>
         <div class="themes" role="radiogroup" aria-label="Office theme">${THEMES.map((t) => `<label class="themecard"><input type="radio" name="theme" value="${t.id}" ${t.id === (server.theme ?? 'studio') ? 'checked' : ''}>
           <span class="sw3" aria-hidden="true">${t.swatch.map((c) => `<i style="background:${c}"></i>`).join('')}</span><span><b>${esc(t.name)}</b><small>${esc(t.blurb)}</small></span></label>`).join('')}</div>
         <div class="cta left">
@@ -500,6 +503,12 @@ function renderLaunch() {
       </div>
     </div>`;
   $('launchBtn').onclick = launch;
+  main.querySelectorAll('input[name=layout]').forEach((r) => {
+    r.onchange = async () => {
+      server.layout = r.value;
+      try { await fetch('api/office', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ layout: r.value }) }); } catch { /* chosen again in the office */ }
+    };
+  });
   main.querySelectorAll('input[name=theme]').forEach((r) => {
     r.onchange = async () => {
       server.theme = r.value;
@@ -591,7 +600,9 @@ async function load() {
     if (!sRes.ok || !tRes.ok) throw new Error('the server answered ' + (sRes.ok ? tRes.status : sRes.status));
     const s = await sRes.json();
     server = await tRes.json();
-    server.theme = (await fetch('api/office', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}))).theme ?? 'studio';
+    const look = await fetch('api/office', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
+    server.theme = look.theme ?? 'studio';
+    server.layout = look.layout ?? 'open';
     groups = s.groups;
     skills = s.skills;
     byName = new Map(skills.map((x) => [x.name, x]));

@@ -6,7 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ROLES, STATUS, STATUS_ORDER, buildAgent, animateAgent, buildStatusIndicator } from './agents.js';
 import { apply, createState, findRole, roleOfAgent, roleStats, roleStatuses, tokens } from './model.js';
 import { buildGraph, routeAt, routeBetween } from './nav.js';
-import { buildOffice3, NODES, EDGES, SPOTS, ERRANDS, ITEM_NAMES, makeItem } from './office-v3.js';
+import { buildOffice3, officeMap, LAYOUTS, PAINTABLE, ITEM_NAMES, makeItem } from './office-v3.js';
 import { validate } from './protocol.js';
 import { ROLE_IDS, setTeamCharacters } from './roles.js';
 import { THEMES, applyTheme, themeById } from './themes.js';
@@ -54,7 +54,12 @@ const win = new THREE.DirectionalLight(0xfff4e2, 0.45);
 win.position.set(-10, 40, -90);
 scene.add(win);
 
-const office = buildOffice3(scene);
+// The office's look (theme, layout, colours) is read before the office is built:
+// the layout decides where the desks and walls go.
+const look = await fetch('api/office', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+const MAP = officeMap(look.layout);
+const { NODES, EDGES, SPOTS, ERRANDS } = MAP;
+const office = buildOffice3(scene, MAP);
 
 // Navigation
 const adj = buildGraph(NODES, EDGES);
@@ -349,7 +354,7 @@ const simBtn = $('sim');
 const meetBtn = $('meet');
 meetBtn.onclick = () => { autoMeeting = !autoMeeting; meetBtn.classList.toggle('on', autoMeeting); };
 
-const ringMat = new THREE.MeshBasicMaterial({ color: '#D97757', transparent: true, opacity: 0.85 });
+const ringMat = new THREE.MeshBasicMaterial({ color: '#5B5BD6', transparent: true, opacity: 0.85 });
 const ring = new THREE.Group();
 [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([sx, sz]) => {
   const m = new THREE.Mesh(new THREE.BoxGeometry(sx ? 0.35 : 10, 0.06, sz ? 0.35 : 8), ringMat);
@@ -527,26 +532,39 @@ renderTask();
 setConn('connecting…');
 connect();
 
-// ---- Theme ---------------------------------------------------------------------------------------
+// ---- Look: layout, theme and custom colours ---------------------------------------------------------
 let theme = 'studio';
-function setTheme(id) {
+let colors = { ...(look.colors ?? {}) };
+const COLOR_LABELS = { wall: 'Walls', floor: 'Floor', partition: 'Partitions' };
+function setTheme(id, newColors = colors) {
   theme = themeById(id).id;
-  applyTheme(THREE, { scene, hemi, key, win }, theme);
+  colors = { ...newColors };
+  applyTheme(THREE, { scene, hemi, key, win }, theme, colors);
   renderThemes();
 }
+const saveLook = (change) => fetch('api/office', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(change) }).catch(() => {});
 function renderThemes() {
   const el = $('themeList');
   if (!el) return;
-  el.innerHTML = THEMES.map((t) => `<button type="button" role="menuitemradio" aria-checked="${t.id === theme}" data-t="${t.id}">
-    <span class="sw3" aria-hidden="true">${t.swatch.map((c) => `<i style="background:${c}"></i>`).join('')}</span>
-    <span><b>${esc(t.name)}</b><small>${esc(t.blurb)}</small></span></button>`).join('');
-  el.querySelectorAll('button').forEach((b) => { b.onclick = () => chooseTheme(b.dataset.t); });
+  const pick = (kind, id, on, name, blurb, swatch) => `<button type="button" role="menuitemradio" aria-checked="${on}" data-${kind}="${id}">
+    ${swatch}<span><b>${esc(name)}</b><small>${esc(blurb)}</small></span></button>`;
+  el.innerHTML = `<h3>Layout</h3>${LAYOUTS.map((l) => pick('l', l.id, l.id === MAP.layout, l.name, l.blurb, `<span class="lay lay-${l.id}" aria-hidden="true"></span>`)).join('')}
+    <h3>Colours</h3>${THEMES.map((t) => pick('t', t.id, t.id === theme, t.name, t.blurb, `<span class="sw3" aria-hidden="true">${t.swatch.map((c) => `<i style="background:${c}"></i>`).join('')}</span>`)).join('')}
+    <h3>Your own colours</h3><div class="custom">${Object.keys(PAINTABLE).map((k) => `<label><input type="color" data-c="${k}" value="${colors[k] ?? PAINTABLE[k]}"><span>${COLOR_LABELS[k]}</span></label>`).join('')}
+    <button type="button" class="linkish" id="resetColors" ${Object.keys(colors).length ? '' : 'disabled'}>Use the theme's</button></div>`;
+  el.querySelectorAll('[data-t]').forEach((b) => { b.onclick = () => { setTheme(b.dataset.t); saveLook({ theme: b.dataset.t }); }; });
+  el.querySelectorAll('[data-l]').forEach((b) => { b.onclick = () => chooseLayout(b.dataset.l); });
+  el.querySelectorAll('input[data-c]').forEach((inp) => {
+    inp.oninput = () => { colors = { ...colors, [inp.dataset.c]: inp.value }; applyTheme(THREE, { scene, hemi, key, win }, theme, colors); };
+    inp.onchange = () => { saveLook({ colors: { [inp.dataset.c]: inp.value } }); renderThemes(); };
+  });
+  $('resetColors').onclick = () => { setTheme(theme, {}); saveLook({ colors: { wall: null, floor: null, partition: null } }); };
 }
-async function chooseTheme(id) {
-  setTheme(id);
-  $('themeMenu').hidden = true;
-  $('themeBtn').setAttribute('aria-expanded', 'false');
-  try { await fetch('api/office', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ theme: id }) }); } catch { /* the look still changed here */ }
+// A new layout means a new floor plan: save it, and the page rebuilds (every open page does).
+async function chooseLayout(id) {
+  if (id === MAP.layout) return;
+  await saveLook({ layout: id });
+  location.reload();
 }
 $('themeBtn').onclick = () => {
   const menu = $('themeMenu');
@@ -556,8 +574,13 @@ $('themeBtn').onclick = () => {
   if (!menu.hidden) menu.querySelector('[aria-checked="true"]')?.focus();
 };
 addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('themeMenu').hidden) { $('themeMenu').hidden = true; $('themeBtn').focus(); } });
-fetch('api/office', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((s) => s && setTheme(s.theme)).catch(() => setTheme('studio'));
-source?.addEventListener('office', (m) => { try { setTheme(JSON.parse(m.data).theme); } catch { /* not settings */ } });
+setTheme(look.theme ?? 'studio', look.colors ?? {});
+source?.addEventListener('office', (m) => {
+  let s;
+  try { s = JSON.parse(m.data); } catch { return; }
+  if (s.layout && s.layout !== MAP.layout) return location.reload();
+  setTheme(s.theme, s.colors ?? {});
+});
 
 // ---- View on phone: a watch-only link on the home network, by QR code ------------------------------
 async function renderPhone(change) {

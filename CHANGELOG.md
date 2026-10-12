@@ -7,7 +7,9 @@
 - A prompt that people paste into Claude Code to set it all up.
 
 ### Look and sharing
-- Five themes: Warm studio, Late night, Cozy cabin, Glass HQ and Neon arcade.
+- Original characters: screen-faced bots with glowing eyes, and an indigo accent. Nothing is derived from Anthropic's brand.
+- Six layouts: Open plan, Pairs, Cubicle farm, Private offices, Round tables and Long table. A test walks every route in every layout to check that no one passes through furniture.
+- Six colour themes (Warm studio, Late night, Cozy cabin, Glass HQ, Neon arcade, Matrix), plus your own colours for walls, floor and partitions.
 - A clean view for screenshots: <kbd>H</kbd>, or `?clean` in the link.
 - The Offices page lists every office on the computer.
 - View on phone: a watch-only link by QR code, on the home Wi-Fi.

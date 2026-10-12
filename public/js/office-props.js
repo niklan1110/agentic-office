@@ -43,6 +43,7 @@ export function floor(p, x0, x1, z0, z1, tex, rep, y = 0) {
   const w = x1 - x0, d = z1 - z0; const t = tex.clone(); t.needsUpdate = true; t.repeat.set(w / rep, d / rep);
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: t, roughness: 1 }));
   m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, y, (z0 + z1) / 2); m.receiveShadow = true; p.add(m);
+  return m;
 }
 
 export function plant(p, x, z, h = 7, s = 1) {
@@ -105,18 +106,17 @@ export function chair(p, x, z, ry, c = '#4B4F55') {
   return g;
 }
 
-export function glassWall(p, x0, z0, x1, z1, gaps = []) {
+export function glassWall(p, x0, z0, x1, z1, gaps = [], H = 10) {
   const len = Math.hypot(x1 - x0, z1 - z0), ry = Math.atan2(-(z1 - z0), x1 - x0);
   const g = G(p, x0, z0, ry);
   const segs = []; let a = 0;
   gaps.forEach(([s, e]) => { segs.push([a, s]); a = e; }); segs.push([a, len]);
-  const H = 10;
   segs.forEach(([s, e]) => {
     if (e - s < .1) return;
     const glass = new THREE.Mesh(new THREE.BoxGeometry(e - s, H - 1, .15), GLASS); glass.position.set((s + e) / 2, H / 2, 0); g.add(glass);
     B(g, e - s, .5, .4, C.frame, (s + e) / 2, 0, 0); B(g, e - s, .4, .4, C.frame, (s + e) / 2, H - .4, 0);
     for (let t = s; t <= e + .01; t += Math.max((e - s) / Math.ceil((e - s) / 6), .1)) B(g, .35, H, .45, C.frame, Math.min(t, e - .17), 0, 0);
-    B(g, e - s, .18, .2, '#E8E0D0', (s + e) / 2, 4.2, .1, false);
+    if (H > 6) B(g, e - s, .18, .2, '#E8E0D0', (s + e) / 2, 4.2, .1, false);
   });
   return g;
 }

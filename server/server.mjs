@@ -24,6 +24,7 @@ import { listOffices, officesDir, register, unregister } from './registry.mjs'
 import { CHARACTERS, LIMITS, MODELS, RECOMMENDED, createTeamStore } from './team.mjs'
 import { validate } from '../public/js/protocol.js'
 import { THEMES } from '../public/js/themes.js'
+import { LAYOUTS } from '../public/js/office-map.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const PUBLIC = path.join(here, '..', 'public')
@@ -88,6 +89,21 @@ export function skillSources(projectDir, collections = [], home = os.homedir(), 
   ]
 }
 
+// The office's look, per project: a colour theme, a layout, and custom colours over the theme.
+const COLOR_KEYS = ['wall', 'floor', 'partition']
+const HEX = /^#[0-9a-f]{6}$/i
+function cleanSettings(s) {
+  const colors = {}
+
+  for (const k of COLOR_KEYS) if (typeof s?.colors?.[k] === 'string' && HEX.test(s.colors[k])) colors[k] = s.colors[k]
+
+  return {
+    theme: THEMES.some((t) => t.id === s?.theme) ? s.theme : 'studio',
+    layout: LAYOUTS.some((l) => l.id === s?.layout) ? s.layout : 'open',
+    colors,
+  }
+}
+
 export function createServer({ projectDir = process.cwd(), collections = [], home = os.homedir(), appHome, fetchImpl = fetch, backlogSize = 200, now = Date.now } = {}) {
   const project = path.resolve(projectDir)
   const library = createLibrary({ dir: libraryDir(appHome), fetchImpl })
@@ -111,9 +127,9 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
     try {
       const saved = JSON.parse(await readFile(settingsFile, 'utf8'))
 
-      return { theme: THEMES.some((t) => t.id === saved.theme) ? saved.theme : 'studio' }
+      return cleanSettings(saved)
     } catch {
-      return { theme: 'studio' }
+      return cleanSettings({})
     }
   }
 
@@ -121,9 +137,15 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
     const body = await jsonBody(req, res)
 
     if (body === undefined) return
-    if (!THEMES.some((t) => t.id === body.theme)) return sendText(res, 400, `theme must be one of ${THEMES.map((t) => t.id).join(', ')}`)
+    if (body.theme !== undefined && !THEMES.some((t) => t.id === body.theme)) return sendText(res, 400, `theme must be one of ${THEMES.map((t) => t.id).join(', ')}`)
+    if (body.layout !== undefined && !LAYOUTS.some((l) => l.id === body.layout)) return sendText(res, 400, `layout must be one of ${LAYOUTS.map((l) => l.id).join(', ')}`)
+    if (body.colors !== undefined && (typeof body.colors !== 'object' || body.colors === null || Object.entries(body.colors).some(([k, v]) => !COLOR_KEYS.includes(k) || (v !== null && !HEX.test(v))))) {
+      return sendText(res, 400, `colors may set ${COLOR_KEYS.join(', ')} to a colour like #A1B2C3, or null`)
+    }
 
-    const settings = { ...(await readSettings()), theme: body.theme }
+    const now = await readSettings()
+    const colors = body.colors === undefined ? now.colors : Object.fromEntries(Object.entries({ ...now.colors, ...body.colors }).filter(([, v]) => v))
+    const settings = cleanSettings({ ...now, ...body, colors })
 
     await mkdir(path.dirname(settingsFile), { recursive: true })
     await writeFile(settingsFile, JSON.stringify(settings, null, 2) + '\n')

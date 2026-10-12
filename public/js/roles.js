@@ -16,7 +16,7 @@ export const ROLE_IDS = Object.freeze([
 
 // Each character's colour, title and job, as in agents.js, for pages and the server, which don't load three.js.
 export const ROLE_INFO = Object.freeze({
-  manager: { color: '#D97757', title: 'Manager', job: 'Orchestrator: your own Claude Code session' },
+  manager: { color: '#5B5BD6', title: 'Manager', job: 'Orchestrator: your own Claude Code session' },
   developer: { color: '#4F7CAC', title: 'Developer', job: 'Software developer' },
   reviewer: { color: '#B5483B', title: 'Code reviewer', job: 'Code reviewer' },
   qa: { color: '#E0B04A', title: 'QA tester', job: 'QA / tester' },

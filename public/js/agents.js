@@ -13,7 +13,7 @@ const E2 = { w: .55, h: 1.1, gap: 3, y: .6 };
 
 // Units: 1u = 1cm. Body blocks sit on top of the legs; extras are offset from the body top.
 export const ROLES = [
-  { id: 'manager', name: 'Manager', role: 'Orchestrator', color: '#D97757',
+  { id: 'manager', name: 'Manager', role: 'Orchestrator', color: '#5B5BD6',
     W: 6, H: 5.6, D: 3, legH: 1.3, legs: 'quad', eyes: { ...E2, y: .6 },
     arm: { type: 'step', y: 1.6, len: 1.2, h: 1 },
     extras: [{ n: 'crest', x: 0, y: 0, w: 2, h: .9, d: 2 }],
@@ -97,50 +97,61 @@ function block(name, mat, w, h, d, x, y, z, soft = true) {
   return m;
 }
 
-const inkMat = new THREE.MeshStandardMaterial({ name: 'eye_black', color: '#161616', roughness: .4, metalness: 0 });
+// The Agent Office bots: a torso, a head with a dark screen for a face, and pixel
+// eyes and a mouth that glow on it. Each role keeps its colour, proportions, eye
+// shape and top piece (crest, antenna, chart bars…), so the team reads at a glance.
+const screenMat = new THREE.MeshStandardMaterial({ name: 'face_screen', color: '#1A1D2B', roughness: .35, metalness: .1 });
+const glowMat = new THREE.MeshStandardMaterial({ name: 'face_glow', color: '#BFF4FF', emissive: '#7FE7FF', emissiveIntensity: 1.1, roughness: .3 });
 
 export function buildAgent(r) {
   const paint = new THREE.MeshStandardMaterial({ name: `${r.id}_paint`, color: r.color, roughness: .62, metalness: 0 });
+  const trim = new THREE.MeshStandardMaterial({ name: `${r.id}_trim`, color: new THREE.Color(r.color).multiplyScalar(.72), roughness: .7, metalness: 0 });
   const root = new THREE.Group(); root.name = `agent_${r.id}`;
   const upper = new THREE.Group(); upper.name = 'upper'; upper.position.y = r.legH; root.add(upper);
 
-  const bodies = r.notch
-    ? [{ x: 0, y: 0, w: r.W, h: r.H - r.notch, d: r.D }, { x: -r.notch / 2, y: r.H - r.notch - .01, w: r.W - r.notch, h: r.notch + .01, d: r.D }]
-    : [{ x: 0, y: 0, w: r.W, h: r.H, d: r.D }];
-  bodies.forEach((b, i) => upper.add(block(i ? `body_${i}` : 'body', paint, b.w, b.h, b.d, b.x, b.y + b.h / 2, 0)));
+  // Torso and head: the head is the wider, taller part, set back a little on the torso.
+  const torsoH = r.H * .42, headH = r.H - torsoH - .15, headY = torsoH + .15;
+  upper.add(block('torso', trim, r.W * .74, torsoH, r.D * .82, 0, torsoH / 2, 0));
+  upper.add(block('collar', paint, r.W * .5, .2, r.D * .6, 0, torsoH + .06, 0));
+  upper.add(block('head', paint, r.W, headH, r.D, 0, headY + headH / 2, 0));
   (r.extras || []).forEach(e => upper.add(block(e.n, paint, e.w, e.h + .02, e.d, e.x, r.H + e.y + e.h / 2 - .02, e.z || 0)));
 
-  const eyeY = r.H * r.eyes.y;
+  // The face: a screen across the head, with glowing eyes and a small mouth.
+  const sw = Math.min(r.W - .9, Math.max(r.eyes.gap + r.eyes.w + 1.2, r.eyes.w + 1.6)), sh = headH * .72;
+  upper.add(block('screen', screenMat, sw, sh, .1, 0, headY + headH / 2, r.D / 2 + .01, false));
+  const eyeY = headY + headH * .58;
   const eyes = new THREE.Group(); eyes.name = 'eyes'; eyes.position.set(0, eyeY, r.D / 2 + .02); upper.add(eyes);
+  const ew = Math.min(r.eyes.w, sw - .6), eh = Math.min(r.eyes.h, sh * .45);
   if (r.eyes.gap) {
-    eyes.add(block('eye_L', inkMat, r.eyes.w, r.eyes.h, .06, -r.eyes.gap / 2, 0, 0, false));
-    eyes.add(block('eye_R', inkMat, r.eyes.w, r.eyes.h, .06, r.eyes.gap / 2, 0, 0, false));
+    eyes.add(block('eye_L', glowMat, ew, eh, .08, -r.eyes.gap / 2, 0, .03, false));
+    eyes.add(block('eye_R', glowMat, ew, eh, .08, r.eyes.gap / 2, 0, .03, false));
   } else {
-    eyes.add(block('visor', inkMat, r.eyes.w, r.eyes.h, .06, 0, 0, 0, false));
+    eyes.add(block('visor', glowMat, ew, eh, .08, 0, 0, .03, false));
   }
+  upper.add(block('mouth', glowMat, Math.min(1.1, sw * .3), .16, .08, 0, headY + headH * .28, r.D / 2 + .05, false));
 
-  const A = r.arm, ad = Math.min(r.D * .6, 1.8);
+  // Arms hang from the torso.
+  const A = r.arm, ad = Math.min(r.D * .55, 1.6), tw = r.W * .74;
   const arms = [-1, 1].map(side => {
     const g = new THREE.Group(); g.name = side < 0 ? 'arm_L' : 'arm_R';
-    g.position.set(side * r.W / 2, A.y + A.h / 2, 0); upper.add(g);
+    g.position.set(side * tw / 2, Math.min(A.y, torsoH - A.h / 2) + A.h / 2, 0); upper.add(g);
     const tag = side < 0 ? 'L' : 'R';
     g.add(block(`arm_${tag}`, paint, A.len + .15, A.h, ad, side * (A.len - .15) / 2, 0, 0));
     if (A.type === 'step') {
-      const sw = A.len * .55 + .15, sh = A.h * .55;
-      g.add(block(`arm_${tag}_step`, paint, sw, sh + .02, ad * .9, side * (sw / 2 - .15), -A.h / 2 - sh / 2 + .01, 0));
+      const w = A.len * .55 + .15, h = A.h * .55;
+      g.add(block(`arm_${tag}_step`, trim, w, h + .02, ad * .9, side * (w / 2 - .15), -A.h / 2 - h / 2 + .01, 0));
     } else if (A.type === 'hand') {
-      g.add(block(`hand_${tag}`, paint, .7, 1.3, ad * .9, side * (A.len - .35), A.h / 2 + .6, 0));
+      g.add(block(`hand_${tag}`, trim, .7, 1.3, ad * .9, side * (A.len - .35), A.h / 2 + .6, 0));
     }
     return g;
   });
 
+  // Two sturdy legs with feet.
   const legs = [];
-  const legDefs = r.legs === 'duo'
-    ? [{ x: -(r.W / 2 - 1.2), w: 1.5, d: r.D * .7 }, { x: r.W / 2 - 1.2, w: 1.5, d: r.D * .7 }]
-    : (() => { const o = r.W / 2 - .55, i = o - .8, d = Math.min(r.D * .55, 2); return [-o, -i, i, o].map(x => ({ x, w: .62, d })); })();
-  legDefs.forEach((L, i) => {
-    const g = new THREE.Group(); g.name = `leg_${i + 1}`; g.position.set(L.x, r.legH, 0); root.add(g);
-    g.add(block(`leg_${i + 1}`, paint, L.w, r.legH + .1, L.d, 0, -(r.legH + .1) / 2 + .1, 0));
+  [-1, 1].forEach((side, i) => {
+    const g = new THREE.Group(); g.name = `leg_${i + 1}`; g.position.set(side * tw * .26, r.legH, 0); root.add(g);
+    g.add(block(`leg_${i + 1}`, trim, Math.max(.9, tw * .24), r.legH + .1, Math.min(r.D * .5, 1.6), 0, -(r.legH + .1) / 2 + .1, 0));
+    g.add(block(`foot_${i + 1}`, paint, Math.max(1, tw * .28), .35, Math.min(r.D * .5, 1.6) + .6, 0, -r.legH + .18, .3));
     legs.push(g);
   });
 

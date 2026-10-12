@@ -1,7 +1,7 @@
 /* Agent Office: the design handoff's stylesheet, plus the connection chip and message bubbles. */
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #EFE6DA; color: #1F1E1C; font-family: 'Geist', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-a { color: #1F1E1C; } a:hover { color: #C4633F; }
+a { color: #1F1E1C; } a:hover { color: #4848C4; }
 #scene { position: fixed; inset: 0; }
 #scene canvas { display: block; }
 #tags { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
@@ -26,7 +26,7 @@ a { color: #1F1E1C; } a:hover { color: #C4633F; }
 .btn:hover { background: #fff; color: #1F1E1C; }
 .sw { width: 26px; height: 15px; border-radius: 8px; background: #CFCBC3; position: relative; transition: background .15s; }
 .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: #fff; transition: transform .15s; }
-.btn.on .sw { background: #D97757; } .btn.on .sw::after { transform: translateX(11px); }
+.btn.on .sw { background: #5B5BD6; } .btn.on .sw::after { transform: translateX(11px); }
 .panel { position: fixed; right: 16px; top: 74px; bottom: 16px; width: 280px; display: flex; flex-direction: column; background: rgba(255,255,255,.88); border: 1px solid rgba(0,0,0,.07); border-radius: 14px; backdrop-filter: blur(10px); overflow: hidden; }
 .panel header { padding: 14px 16px 10px; font: 500 11px/1 'Geist Mono', monospace; color: #6B6862; text-transform: uppercase; letter-spacing: .06em; display: flex; justify-content: space-between; }
 .list { overflow: auto; padding: 0 8px 8px; display: flex; flex-direction: column; gap: 2px; }
@@ -55,14 +55,14 @@ a { color: #1F1E1C; } a:hover { color: #C4633F; }
 .task { display: flex; align-items: center; gap: 4px; padding: 3px 3px 3px 12px; background: rgba(255,255,255,.88); border: 1px solid rgba(0,0,0,.07); border-radius: 10px; backdrop-filter: blur(8px); min-width: 0; flex: 0 1 auto; }
 .task input { border: 0; background: transparent; outline: none; font: 400 13px/1 'Geist', sans-serif; color: #1F1E1C; width: 220px; min-width: 100px; flex: 1 1 auto; }
 .task input::placeholder { color: #8A867E; }
-.task button { appearance: none; border: 0; background: #D97757; color: #fff; font: 500 12px/1 'Geist', sans-serif; padding: 9px 12px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
-.task button:hover { background: #C4633F; }
+.task button { appearance: none; border: 0; background: #5B5BD6; color: #fff; font: 500 12px/1 'Geist', sans-serif; padding: 9px 12px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+.task button:hover { background: #4848C4; }
 .task button:disabled { background: #CFCBC3; cursor: default; }
 .bubble { position: absolute; left: 0; top: 0; max-width: 240px; padding: 10px 12px; border-radius: 10px; background: #1F1E1C; color: #fff; font: 500 13px/1.35 'Geist', sans-serif; text-wrap: pretty; box-shadow: 0 6px 20px rgba(60,40,20,.18); display: none; }
-.bubble small { display: block; font: 400 10px/1 'Geist Mono', monospace; letter-spacing: .06em; text-transform: uppercase; color: #E9B49B; margin-bottom: 6px; }
+.bubble small { display: block; font: 400 10px/1 'Geist Mono', monospace; letter-spacing: .06em; text-transform: uppercase; color: #BDBDFF; margin-bottom: 6px; }
 .bubble::after { content: ''; position: absolute; left: 50%; bottom: -5px; width: 10px; height: 10px; background: #1F1E1C; transform: translateX(-50%) rotate(45deg); }
 .bubble.chat { position: fixed; max-width: 200px; padding: 8px 10px; background: #fff; color: #1F1E1C; font-size: 12px; pointer-events: none; }
-.bubble.chat small { color: #C4633F; margin-bottom: 4px; }
+.bubble.chat small { color: #4848C4; margin-bottom: 4px; }
 .bubble.chat::after { background: #fff; }
 .taskcard { margin: 0 16px 10px; padding: 12px; border-radius: 10px; background: #F3EEE6; display: flex; flex-direction: column; gap: 6px; }
 .taskcard .lbl { font: 400 10px/1 'Geist Mono', monospace; color: #8A867E; letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
@@ -76,7 +76,7 @@ a { color: #1F1E1C; } a:hover { color: #C4633F; }
 /* Connection chip and details */
 button.conn { appearance: none; border: 0; font: inherit; cursor: pointer; }
 button.conn:hover { background: #fff; color: #1F1E1C; }
-button.conn:focus-visible { outline: 2px solid #C4633F; outline-offset: 2px; }
+button.conn:focus-visible { outline: 2px solid #4848C4; outline-offset: 2px; }
 .connpanel { position: fixed; top: 74px; left: 16px; width: min(380px, calc(100vw - 32px)); padding: 14px 16px; background: rgba(255,255,255,.96); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(60,40,20,.15); z-index: 5; font-size: 13px; line-height: 1.45; }
 .connpanel h2 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
 .connpanel ul { list-style: none; margin: 10px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -149,8 +149,8 @@ body.view-only .edit-only, body.view-only .pick, body.view-only .hint { display:
 .phone-note.err { color: #9E2D25; }
 .phone-url code { font: 400 11px 'Geist Mono', monospace; color: #8A867E; overflow-wrap: anywhere; }
 .btn.small { padding: 8px 12px; font-size: 12.5px; }
-.primary-ish { background: #D97757 !important; color: #fff !important; border-color: #D97757 !important; }
-.primary-ish:hover { background: #C4633F !important; }
+.primary-ish { background: #5B5BD6 !important; color: #fff !important; border-color: #5B5BD6 !important; }
+.primary-ish:hover { background: #4848C4 !important; }
 body.dark .phone-note { color: #A9A7B8; }
 
 .conn { white-space: nowrap; }
@@ -171,3 +171,24 @@ body.clean .bar, body.clean .panel, body.clean .legend, body.clean .hint, body.c
 .hint kbd { font: inherit; padding: 1px 5px; border-radius: 4px; border: 1px solid rgba(0,0,0,.15); background: rgba(255,255,255,.6); }
 body.dark .hint kbd { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.25); color: #E8E6F0; }
 .hint kbd { color: #3A3833; }
+
+/* Look menu: layout, colours, your own colours */
+.thememenu { max-height: calc(100vh - 120px); overflow: auto; overscroll-behavior: contain; }
+.thememenu h3 { margin: 8px 10px 4px; font: 500 10.5px/1 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: .06em; color: #8A867E; }
+.lay { flex: none; width: 36px; height: 26px; border-radius: 6px; background: #EDE6DB; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); position: relative; overflow: hidden; }
+.lay::before, .lay::after { content: ''; position: absolute; background: #8A7A66; border-radius: 1px; }
+.lay-open::before { left: 5px; right: 5px; top: 6px; height: 4px; box-shadow: 0 9px 0 #8A7A66; }
+.lay-pairs::before { left: 5px; width: 8px; top: 7px; height: 12px; box-shadow: 13px 0 0 #8A7A66; }
+.lay-cubicles::before { inset: 4px 4px 13px; background: transparent; border: 2px solid #6B7076; border-top: 0; }
+.lay-cubicles::after { left: 13px; width: 2px; top: 4px; height: 9px; background: #6B7076; box-shadow: 9px 0 0 #6B7076; }
+.lay-offices::before { inset: 4px; background: transparent; border: 2px solid #7FA7C4; }
+.lay-offices::after { left: 17px; top: 4px; width: 2px; height: 18px; background: #7FA7C4; }
+.lay-pods::before { left: 5px; top: 7px; width: 12px; height: 12px; border-radius: 50%; box-shadow: 15px 0 0 #8A7A66; }
+.lay-bench::before { left: 4px; right: 4px; top: 10px; height: 6px; }
+.custom { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 4px 10px 10px; }
+.custom label { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; min-height: 36px; }
+.custom input[type=color] { width: 30px; height: 30px; padding: 0; border: 1px solid rgba(0,0,0,.15); border-radius: 7px; background: none; cursor: pointer; }
+.linkish { appearance: none; border: 0; background: none; padding: 6px 2px; font: 500 12px 'Geist', sans-serif; color: #55524C; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.linkish:disabled { opacity: .45; cursor: default; text-decoration: none; }
+body.dark .thememenu h3, body.dark .linkish { color: #A9A7B8; }
+body.dark .custom label { color: #E8E6F0; }

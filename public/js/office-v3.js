@@ -1,8 +1,11 @@
 import * as THREE from 'three';
 import { softBox } from './agents.js';
 import { C, mat, GLOW, B, G, plant, floorTex, floor, glassWall, windowOn, picture, bookshelf, chair, mug, deskPlant } from './office-props.js';
-import { PI, T, COLS, ZA, ZB, DESKS } from './office-map.js';
-export { COLS, DESKS, NODES, EDGES, SPOTS, ERRANDS, ITEM_NAMES } from './office-map.js';
+import { PI, T, officeMap } from './office-map.js';
+export { COLS, DESKS, NODES, EDGES, SPOTS, ERRANDS, ITEM_NAMES, LAYOUTS, officeMap } from './office-map.js';
+
+// Colours a person can change per office (custom colours): the materials behind them.
+export const PAINTABLE = { wall: C.wall, partition: '#8E949B', floor: '#C2B5A2' };
 
 
 const MUGS = ['#F5F1E8', '#C9563F', '#4F7CAC', '#E0B04A', '#3E9C9C', '#E07A9A', '#8C6BB1'];
@@ -34,12 +37,33 @@ const keyboard = (g, x = -.4, z = -1.1, keys) => {
 };
 const cup = (g, x, z, c) => { B(g, .7, .9, .7, c, x, T, z); ['#C9563F', '#4F7CAC', '#E0B04A'].forEach((pc, i) => { const p = B(g, .12, 1, .12, pc, x - .15 + i * .15, T + .5, z + (i - 1) * .1, false); p.rotation.z = (i - 1) * .2; }); };
 
-function deskFor(scene, id, x, z) {
-  const g = G(scene, x, z);
-  B(g, 9.5, .5, 4, C.woodL, 0, 2.3, 0);
-  [[-4.4, -1.6], [-4.4, 1.6]].forEach(([lx, lz]) => B(g, .4, 2.3, .4, C.dark, lx, 0, lz));
-  B(g, 2.6, 2.3, 3.6, '#9A948C', 3.25, 0, 0);
-  [.75, 1.55].forEach(y => B(g, 2.2, .08, .1, '#6B665F', 3.25, y, 1.82, false));
+// A local point of a group at (x, z) turned by ry, in world coordinates.
+const toWorld = (x, z, ry, lx, lz) => new THREE.Vector3(x + lx * Math.cos(ry) + lz * Math.sin(ry), T, z - lx * Math.sin(ry) + lz * Math.cos(ry));
+
+// A laptop on a shared table, for the round-table layout: it faces its chair.
+function laptopFor(scene, d) {
+  const ry = Math.atan2(d.seat[0] - d.x, d.seat[1] - d.z) + PI;
+  const g = G(scene, d.x, d.z, ry, T);
+  B(g, 2.4, .15, 1.7, '#3A3836', 0, 0, .2);
+  const scr = G(g, 0, 1.05); scr.rotation.x = -.25;
+  B(scr, 2.4, 1.6, .12, '#3A3836', 0, .1, 0); B(scr, 2.1, 1.3, .05, GLOW('#CFE0F0', .4), 0, .25, -.07, false);
+  mug(g, 1.8, 0, .6, MUGS[(d.id.length * 3) % MUGS.length]);
+  B(g, 1.2, .1, 1.5, C.paper, -2, 0, .5, false);
+  const slots = [[-1.9, .2], [1.9, -.4]].map(([sx, sz]) => ({ pos: toWorld(d.x, d.z, ry, sx, sz), item: null }));
+  return { group: g, slots, idx: 0 };
+}
+
+// A desk with its owner's things. kind 'bare': just the things, on a shared bench.
+function deskFor(scene, d) {
+  if (d.kind === 'laptop') return laptopFor(scene, d);
+  const { id, x, z, ry = 0 } = d;
+  const g = G(scene, x, z, ry);
+  if (d.kind !== 'bare') {
+    B(g, 9.5, .5, 4, C.woodL, 0, 2.3, 0);
+    [[-4.4, -1.6], [-4.4, 1.6]].forEach(([lx, lz]) => B(g, .4, 2.3, .4, C.dark, lx, 0, lz));
+    B(g, 2.6, 2.3, 3.6, '#9A948C', 3.25, 0, 0);
+    [.75, 1.55].forEach(y => B(g, 2.2, .08, .1, '#6B665F', 3.25, y, 1.82, false));
+  }
   const R = Math.random;
   if (id === 'developer') {
     monitor(g, 1.3, .3, .15, 3.8, 2.3, { stickers: ['#E0B04A', '#3FAE6A', '#E07A9A', '#4C8DF6'] });
@@ -107,14 +131,17 @@ function deskFor(scene, id, x, z) {
     B(g, .8, .7, .45, '#C9A15A', .4, T, 1.4); [-.25, .25].forEach(dx => B(g, .12, .45, .12, '#9C978F', .4 + dx, T + .7, 1.4)); B(g, .62, .12, .12, '#9C978F', .4, T + 1.12, 1.4); B(g, .12, .2, .05, C.dark, .4, T + .25, 1.64, false);
     B(g, .7, .05, 1, '#F5F1E8', 4.3, T, 1.4); B(g, .7, .06, .2, '#4F7CAC', 4.3, T, 1.1, false);
   }
-  const slots = [[-4, 1.2], [-3.05, 1.4], [-2.1, 1.15]].map(([sx, sz]) => ({ pos: new THREE.Vector3(x + sx, T, z + sz), item: null }));
+  const slots = [[-4, 1.2], [-3.05, 1.4], [-2.1, 1.15]].map(([sx, sz]) => ({ pos: toWorld(x, z, ry, sx, sz), item: null }));
   return { group: g, slots, idx: 0 };
 }
 
-export function buildOffice3(scene) {
-  const out = { desks: {} };
+export function buildOffice3(scene, map = officeMap()) {
+  const out = { desks: {}, layout: map.layout };
+  const plan = map.plan;
   floor(scene, -400, 400, -400, 400, floorTex('#E4DBCD', '#E0D7C8', 4), 40, -.05);
-  floor(scene, -50.5, 40, -13, 24, floorTex('#C2B5A2', '#BBAD99', 8), 8);
+  out.floor = floor(scene, -50.5, 40, -13, 24, floorTex('#C2B5A2', '#BBAD99', 8), 8);
+  out.floor.material.userData.paint = 'floor';
+  mat(C.wall).userData.paint = 'wall';
   floor(scene, -50.5, -30, -32.5, -13, floorTex('#B3A089', '#AC9982', 8), 8, .01);
   floor(scene, -30, 4, -32.5, -13, floorTex('#A9A898', '#A3A292', 8), 8, .01);
   floor(scene, 4, 26, -32.5, -13, floorTex('#E8DCC6', '#CDBDA1', 12), 8, .01);
@@ -215,14 +242,17 @@ export function buildOffice3(scene) {
   plant(scene, 38.8, -24.5, 6.5, .8);
 
   // Bullpen
-  Object.entries(DESKS).forEach(([id, [c, row]]) => { out.desks[id] = deskFor(scene, id, COLS[c], (row === 'A' ? ZA : ZB) + 4.3); });
-  const cp = G(scene, 16, 13.4, PI);
+  for (const d of Object.values(map.DESKS)) out.desks[d.id] = deskFor(scene, d);
+  buildLayout(scene, plan);
+  const cp = G(scene, plan.copier[0], plan.copier[1], PI);
   B(cp, 6.4, 4.8, 4.2, '#DCD8D0', 0, 0, 0); B(cp, 6.4, .6, 4.2, '#4A4845', 0, 4.8, 0);
   B(cp, 6, .1, .1, '#9C978F', 0, 1.6, 2.12, false); B(cp, 6, .1, .1, '#9C978F', 0, 3.1, 2.12, false);
   B(cp, 2.4, .3, 2, C.paper, -4, 3.4, .2); B(cp, 1.6, .35, 1.4, '#3A3836', 2.2, 5.4, 1.4); B(cp, .4, .2, .3, GLOW('#3FAE6A', 1.2), 2.6, 5.75, 1.7, false);
   B(cp, 2.4, .5, 2, C.paper, 1.8, 5.4, -.6);
-  [[21.6, 11.6, 0], [21.6, 11.6, 2], [21.6, 15, 0]].forEach(([x, z, y]) => B(scene, 3, 2, 2.6, C.cardboard, x, y, z));
-  B(scene, 3.2, .25, .6, '#8C6B4A', 21.6, 2, 11.6, false);
+  if (plan.boxes) {
+    [[21.6, 11.6, 0], [21.6, 11.6, 2], [21.6, 15, 0]].forEach(([x, z, y]) => B(scene, 3, 2, 2.6, C.cardboard, x, y, z));
+    B(scene, 3.2, .25, .6, '#8C6B4A', 21.6, 2, 11.6, false);
+  }
   B(scene, 18, 3, 2.6, C.woodD, -36, 0, 21.2); B(scene, 18.3, .25, 2.9, C.wood, -36, 3, 21.2);
   ['#9C4A3A', '#3F5E73', '#C9A15A', '#5E7458', '#7B5E8C', '#3F5E73'].forEach((c, i) => B(scene, .5, 1.8, 1.6, c, -43.5 + i * .55, 3.25, 21.2, false));
   deskPlant(scene, -36, 3.25, 21.2); deskPlant(scene, -29, 3.25, 21.2);
@@ -240,4 +270,34 @@ export function buildOffice3(scene) {
   plant(scene, 37.5, 20.5, 9); plant(scene, 31, -5.5, 6, .8);
   [[33, 19.5, 0], [33, 19.5, 2], [30.4, 20, 0]].forEach(([x, z, y]) => B(scene, 2.6, 2, 2.4, C.cardboard, x, y, z));
   return out;
+}
+
+// What makes each layout: cubicle partitions, glass rooms with rugs, round tables, the bench.
+function buildLayout(scene, plan) {
+  const fabric = mat(PAINTABLE.partition, { roughness: .95 });
+  fabric.userData.paint = 'partition';
+  for (const [x0, z0, x1, z1] of plan.partitions ?? []) {
+    const len = Math.hypot(x1 - x0, z1 - z0), along = Math.abs(x1 - x0) > Math.abs(z1 - z0);
+    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+    B(scene, along ? len : .3, 4.6, along ? .3 : len, fabric, cx, 0, cz);
+    B(scene, along ? len + .1 : .42, .18, along ? .42 : len + .1, '#5D6168', cx, 4.6, cz);
+  }
+  for (const [x0, z0, x1, z1, gaps] of plan.glass ?? []) glassWall(scene, x0, z0, x1, z1, gaps ?? [], 5.2);
+  const rugs = ['#B9714F', '#7E8FA6', '#8FA08A', '#C9A15A', '#9C7BA8'];
+  (plan.rugs ?? []).forEach(([x, z], i) => { B(scene, 9.6, .06, 7.4, rugs[i % rugs.length], x, .02, z, false); B(scene, 8.4, .07, 6.2, C.cream, x, .03, z, false); });
+  for (const [x, z] of plan.tables ?? []) {
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.2, .45, 40), mat(C.woodL));
+    top.position.set(x, T - .22, z); top.castShadow = top.receiveShadow = true; scene.add(top);
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(.45, .45, T - .45, 16), mat(C.dark));
+    leg.position.set(x, (T - .45) / 2, z); leg.castShadow = true; scene.add(leg);
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.8, .25, 24), mat(C.dark));
+    foot.position.set(x, .12, z); scene.add(foot);
+    deskPlant(scene, x, T, z);
+  }
+  if (plan.bench) {
+    const [x0, z0, x1, z1] = plan.bench, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+    B(scene, x1 - x0, .5, z1 - z0, C.woodL, cx, 2.3, cz);
+    for (let x = x0 + 1; x <= x1 - 1; x += (x1 - x0 - 2) / 4) [z0 + .8, z1 - .8].forEach((lz) => B(scene, .5, 2.3, .5, C.dark, x, 0, lz));
+    B(scene, x1 - x0 - 4, .9, .25, '#9A948C', cx, T, cz, false);
+  }
 }
