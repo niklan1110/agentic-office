@@ -19,3 +19,17 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: npm test
       - run: node bin/agent-office.mjs --version
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Markdown style
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: '**/*.md'
+      - name: Links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --config lychee.toml --no-progress './**/*.md'
+          fail: true

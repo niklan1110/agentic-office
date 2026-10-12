@@ -1,0 +1,11 @@
+# lychee (https://github.com/lycheeverse/lychee): checks the links in the Markdown.
+exclude = [
+  # Addresses that only exist on your own computer.
+  '^https?://(127\.0\.0\.1|localhost)',
+  # Turn this back on once Discussions is enabled in the repository settings.
+  '^https://github\.com/niklan1110/agentic-office/discussions',
+  # Image services that rate-limit automated checks; they are only pictures.
+  '^https://(api\.star-history\.com|contrib\.rocks|img\.shields\.io)',
+]
+accept = [200, 206, 429]
+max_retries = 3

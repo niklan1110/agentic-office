@@ -29,6 +29,14 @@ node scripts/capture.mjs http://127.0.0.1:7777 docs/media            # all of th
 node scripts/capture.mjs http://127.0.0.1:7777 docs/media phone      # just one
 ```
 
+The animated hero (needs ffmpeg) steps the office frame by frame, so it is smooth on any machine:
+
+```bash
+node scripts/record.mjs http://127.0.0.1:7777 docs/media/hero.webp 18 3   # seconds, speed
+```
+
+The banner comes from docs/media/banner-light.svg and banner-dark.svg. Edit them as plain SVG.
+
 ## Before you open a pull request
 
 - `npm test` and `claude plugin test plugin` pass, and `claude plugin validate plugin` passes.

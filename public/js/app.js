@@ -653,7 +653,7 @@ $('panelHead').onclick = (e) => {
 };
 
 // Nothing to draw while the tab is hidden: saves the battery and the fan.
-document.addEventListener('visibilitychange', () => { renderer.setAnimationLoop(document.hidden ? null : frame); if (!document.hidden) clock.getDelta(); });
+document.addEventListener('visibilitychange', () => { if (RECORD) return; renderer.setAnimationLoop(document.hidden ? null : frame); if (!document.hidden) clock.getDelta(); });
 
 // ---- Frame loop ----------------------------------------------------------------------------------
 const clock = new THREE.Clock();
@@ -661,8 +661,13 @@ const lerpAngle = (a, b, k) => a + ((((b - a + Math.PI) % (2 * Math.PI)) + 2 * M
 const SPEED = 7.5;
 const bubble = $('bubble'), bubbleTxt = bubble.querySelector('span');
 
-function frame() {
-  const dt = Math.min(clock.getDelta(), 0.05) * SPEED_UP, t = clock.elapsedTime;
+// Recording mode (?record, for the README animation): the loop does not run by itself;
+// the recorder steps it a fixed time at a time, so the clip is smooth however slow the machine.
+const RECORD = params.has('record');
+let recordT = 0;
+function frame(fixedDt) {
+  const dt = typeof fixedDt === 'number' ? fixedDt * SPEED_UP : Math.min(clock.getDelta(), 0.05) * SPEED_UP;
+  const t = typeof fixedDt === 'number' ? (recordT += dt) : clock.elapsedTime;
   const k = 1 - Math.exp(-dt * 9);
   if (!paused && phase !== 'none') tickMeeting(dt);
   agents.forEach((a) => {
@@ -718,4 +723,5 @@ function frame() {
   controls.update();
   renderer.render(scene, camera);
 }
-renderer.setAnimationLoop(frame);
+if (RECORD) window.__agentOffice.step = (dt, n = 1) => { for (let i = 0; i < n; i++) frame(dt); };
+else renderer.setAnimationLoop(frame);

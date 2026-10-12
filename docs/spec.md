@@ -7,6 +7,7 @@ An open-source local tool for Claude Code users: build a team of agents from ski
 **Users:** developers who use Claude Code (VS Code, terminal, desktop) and want named, skill-equipped subagents without writing agent files by hand.
 
 **Success looks like:**
+
 - From a fresh clone: `npx github:niklan1110/agentic-office` in a project, then a team is launched in under 2 minutes without reading docs.
 - A Claude Code session in the project with the plugin installed shows as connected within 3 seconds of the server starting. Nobody types a port or URL.
 - When it is not connected, the page and the session both say why, with the one step that fixes it.
@@ -38,7 +39,7 @@ claude plugin test plugin        # plugin tests
 
 ## Structure
 
-```
+```text
 bin/agent-office.mjs      CLI: start, plugin install, doctor, --help, --version
 scripts/capture.mjs       README screenshots through headless Chrome
 server/                   HTTP server, discovery, sessions and tasks, skill catalog, team launch

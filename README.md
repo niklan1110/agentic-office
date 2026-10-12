@@ -1,10 +1,9 @@
 <div align="center">
 
-<img src="docs/media/logo.svg" width="72" height="72" alt="">
-
-# Agent Office
-
-**Watch your Claude Code agents work in a 3D office.**
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/banner-dark.svg">
+  <img alt="Agent Office: watch your Claude Code agents work in a 3D office" src="docs/media/banner-light.svg" width="900">
+</picture>
 
 Build a team of agents from skills, launch it into your project, and see who is thinking, typing and talking, live.
 
@@ -19,11 +18,9 @@ Build a team of agents from skills, launch it into your project, and see who is 
 
 </div>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/media/office-dark.webp">
-  <source media="(prefers-color-scheme: light)" srcset="docs/media/office-light.webp">
-  <img alt="Agent Office: a team of voxel characters working at their desks, with a list of agents and what each one is doing" src="docs/media/office-light.webp" width="900">
-</picture>
+<p align="center">
+  <img alt="A task arrives: the manager calls the team into the conference room, briefs them, and everyone walks back to their desk and gets to work" src="docs/media/hero.webp" width="900">
+</p>
 
 > [!NOTE]
 > Agent Office runs only on your computer. There is no account, no cloud and no build step. It needs Node 22+ and [Claude Code](https://claude.com/claude-code) in VS Code, the terminal or the desktop app. Claude Code on the web is not supported.
@@ -170,15 +167,30 @@ agentic-office doctor [--project <dir>]
 The plugin's options are under `/plugin` → agent-office → configure. Leave **Office URL** empty: the plugin finds the office by itself.
 
 **What launching writes**, all under the project's `.claude/`:
+
 - `agents/<name>.md`, one per agent. A file the office did not write is never touched.
 - `skills/<skill>/`, a copy of each assigned skill.
 - `office-team.json`, the team.
 - `agent-office/`, the theme and the running server's address.
+
 </details>
 
 ## Share your office
 
 Took a screenshot you like? Post it with **#AgentOffice**, or share it in [Discussions → Show and tell](https://github.com/niklan1110/agentic-office/discussions). Press <kbd>H</kbd> first to hide the controls.
+
+## Contributors
+
+<a href="https://github.com/niklan1110/agentic-office/graphs/contributors"><img src="https://contrib.rocks/image?repo=niklan1110/agentic-office" alt="People who have contributed to Agent Office"></a>
+
+## Star history
+
+<a href="https://star-history.com/#niklan1110/agentic-office&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=niklan1110/agentic-office&type=Date&theme=dark">
+    <img alt="Agent Office stars over time" src="https://api.star-history.com/svg?repos=niklan1110/agentic-office&type=Date" width="600">
+  </picture>
+</a>
 
 ## Contributing
 
@@ -187,6 +199,5 @@ Issues and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) has the
 ## License
 
 Agent Office is an independent project. It is not made by, affiliated with or endorsed by Anthropic. Claude and Claude Code are trademarks of Anthropic.
-
 
 [MIT](LICENSE). Agent Office includes three.js (MIT), qrcode-generator (MIT) and the Geist fonts (OFL); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Skills you add keep their own licenses. The 3D office follows the design handoff in [docs/design/](docs/design/).

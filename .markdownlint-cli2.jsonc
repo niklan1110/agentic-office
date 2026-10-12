@@ -1,0 +1,12 @@
+// markdownlint (https://github.com/DavidAnson/markdownlint): keeps the Markdown tidy.
+{
+  "config": {
+    "default": true,
+    "MD013": false, // line length: prose is not wrapped
+    "MD033": false, // inline HTML: the README uses <picture>, <table>, <details>, <kbd>
+    "MD041": false, // the README starts with a banner image, not a heading
+    "MD024": { "siblings_only": true }, // the changelog repeats sub-headings per release
+    "MD060": false // table separator spacing: |---| is fine
+  },
+  "ignores": ["node_modules/**", ".claude/**", "docs/design/**"]
+}
