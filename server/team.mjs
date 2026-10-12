@@ -221,8 +221,8 @@ export function createTeamStore({ projectDir, catalog }) {
       const added = []
 
       for (const name of wanted) {
-        // Only collection skills need copying: personal ones are in every session already.
-        if (byName.get(name)?.source !== 'collection' || (await installed(name))) continue
+        // Library and collection skills are copied in; personal ones are in every session already.
+        if (!['collection', 'library'].includes(byName.get(name)?.source) || (await installed(name))) continue
         await cp(byName.get(name).dir, path.join(skillsDir, name), { recursive: true, force: false, errorOnExist: false })
         added.push(name)
       }

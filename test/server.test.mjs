@@ -14,7 +14,7 @@ before(async () => {
   tmp = await mkdtemp(path.join(os.tmpdir(), 'office-server-'))
   project = path.join(tmp, 'app')
   await mkdir(project)
-  office = createServer({ projectDir: project, home: path.join(tmp, 'home') })
+  office = createServer({ projectDir: project, home: path.join(tmp, 'home'), appHome: path.join(tmp, 'app-home') })
   base = await office.listen({ port: 0, strictPort: true })
 })
 
@@ -130,14 +130,14 @@ test('serves the app and nothing outside it', async () => {
 })
 
 test('a taken port moves the server to the next one, unless the port is strict', async () => {
-  const second = createServer({ projectDir: path.join(tmp, 'second'), home: path.join(tmp, 'home') })
+  const second = createServer({ projectDir: path.join(tmp, 'second'), home: path.join(tmp, 'home'), appHome: path.join(tmp, 'app-home') })
   const port = Number(new URL(base).port)
 
   await mkdir(path.join(tmp, 'second'))
   assert.notEqual(Number(new URL(await second.listen({ port })).port), port)
   await second.close()
 
-  const strict = createServer({ projectDir: path.join(tmp, 'second'), home: path.join(tmp, 'home') })
+  const strict = createServer({ projectDir: path.join(tmp, 'second'), home: path.join(tmp, 'home'), appHome: path.join(tmp, 'app-home') })
 
   await assert.rejects(strict.listen({ port, strictPort: true }), /EADDRINUSE/)
 })
@@ -147,7 +147,7 @@ test('stopping the server removes its discovery file', async () => {
 
   await mkdir(dir)
 
-  const third = createServer({ projectDir: dir, home: path.join(tmp, 'home') })
+  const third = createServer({ projectDir: dir, home: path.join(tmp, 'home'), appHome: path.join(tmp, 'app-home') })
 
   await third.listen({ port: 0 })
   assert.ok(JSON.parse(await readFile(discoveryPath(dir), 'utf8')).url)

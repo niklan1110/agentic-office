@@ -26,7 +26,7 @@ before(async () => {
   await mkdir(projectDir)
   await addSkill('react-patterns', 'name: react-patterns\ndescription: React idioms. And more after that.')
   await addSkill('beta', 'name: beta\ndescription: >\n  Folded beta text\n  over two lines.\ngroup: research')
-  running = createServer({ projectDir, collections: [skillsDir], home: path.join(tmp, 'home') })
+  running = createServer({ projectDir, collections: [skillsDir], home: path.join(tmp, 'home'), appHome: path.join(tmp, 'app-home') })
   base = await running.listen({ port: 0, discovery: false })
 })
 

@@ -18,6 +18,7 @@ import { createCatalog } from './catalog.mjs'
 import { removeDiscovery, writeDiscovery } from './discovery.mjs'
 import { GROUPS } from './groups.mjs'
 import { createHub, samePath } from './hub.mjs'
+import { MAX_ZIP, createLibrary, libraryDir } from './library.mjs'
 import { CHARACTERS, LIMITS, MODELS, RECOMMENDED, createTeamStore } from './team.mjs'
 import { validate } from '../public/js/protocol.js'
 
@@ -47,7 +48,7 @@ const sendJson = (res, status, body) => {
   res.end(JSON.stringify(body))
 }
 
-function readBody(req, limit) {
+function readBody(req, limit, raw = false) {
   return new Promise((resolve, reject) => {
     let size = 0
     const chunks = []
@@ -57,7 +58,7 @@ function readBody(req, limit) {
       if (size > limit) return reject(Object.assign(new Error('too large'), { status: 413 }))
       chunks.push(chunk)
     })
-    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+    req.on('end', () => resolve(raw ? Buffer.concat(chunks) : Buffer.concat(chunks).toString('utf8')))
     req.on('error', reject)
   })
 }
@@ -73,18 +74,21 @@ async function jsonBody(req, res, limit = MAX_BODY) {
   }
 }
 
-// The skill sources for a project: what is already there, your personal skills, then the collections given.
-export function skillSources(projectDir, collections = [], home = os.homedir()) {
+// The skill sources for a project: what is already there, your personal skills, your
+// Agent Office library, then the collections given.
+export function skillSources(projectDir, collections = [], home = os.homedir(), library = libraryDir()) {
   return [
     { dir: path.join(projectDir, '.claude', 'skills'), kind: 'project' },
     { dir: path.join(home, '.claude', 'skills'), kind: 'personal' },
+    { dir: library, kind: 'library' },
     ...collections.map((dir) => ({ dir: path.resolve(dir), kind: 'collection' })),
   ]
 }
 
-export function createServer({ projectDir = process.cwd(), collections = [], home = os.homedir(), backlogSize = 200, now = Date.now } = {}) {
+export function createServer({ projectDir = process.cwd(), collections = [], home = os.homedir(), appHome, fetchImpl = fetch, backlogSize = 200, now = Date.now } = {}) {
   const project = path.resolve(projectDir)
-  const catalog = createCatalog(skillSources(project, collections, home))
+  const library = createLibrary({ dir: libraryDir(appHome), fetchImpl })
+  const catalog = createCatalog(skillSources(project, collections, home, library.dir))
   const team = createTeamStore({ projectDir: project, catalog })
   const backlog = []
   const clients = new Set()
@@ -160,6 +164,50 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
     const marked = await Promise.all(skills.map(async ({ dir, ...s }) => ({ ...s, installed: s.source === 'project' || (await team.installed(s.name)) })))
 
     return sendJson(res, 200, { project, sources: catalog.sources, groups: GROUPS, skills: marked })
+  }
+
+  // Adding skills to the library: inspect a GitHub link or an uploaded zip, then add the ones picked.
+  async function libraryInspect(req, res) {
+    const body = await jsonBody(req, res)
+
+    if (body === undefined) return
+
+    try {
+      return sendJson(res, 200, await library.inspectGitHub(body.url))
+    } catch (err) {
+      return sendText(res, 400, err.message)
+    }
+  }
+
+  async function libraryUpload(req, res) {
+    let buf
+    try {
+      buf = await readBody(req, MAX_ZIP, true)
+    } catch {
+      return sendText(res, 413, `the zip is larger than ${MAX_ZIP / 1024 / 1024} MB`)
+    }
+
+    try {
+      return sendJson(res, 200, library.inspectZip(buf, String(req.headers['x-file-name'] ?? 'uploaded zip').slice(0, 120)))
+    } catch (err) {
+      return sendText(res, 400, err.message)
+    }
+  }
+
+  async function libraryChange(req, res, action) {
+    const body = await jsonBody(req, res)
+
+    if (body === undefined) return
+
+    try {
+      const result = action === 'add' ? await library.add(String(body.token ?? ''), Array.isArray(body.names) ? body.names.map(String) : []) : await library.remove(String(body.name ?? ''))
+
+      catalog.refresh()
+
+      return sendJson(res, 200, result ?? { ok: true })
+    } catch (err) {
+      return sendText(res, 400, err.message)
+    }
   }
 
   async function readTeam(res) {
@@ -254,6 +302,10 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
       case 'POST /api/sessions/heartbeat': return void heartbeat(req, res)
       case 'POST /api/tasks': return void queueTask(req, res)
       case 'POST /api/launch': return void launchTeam(req, res)
+      case 'POST /api/library/inspect': return void libraryInspect(req, res)
+      case 'POST /api/library/upload': return void libraryUpload(req, res)
+      case 'POST /api/library/add': return void libraryChange(req, res, 'add')
+      case 'POST /api/library/remove': return void libraryChange(req, res, 'remove')
       default:
         if (req.method === 'POST' && taskResultPath) return void taskResult(req, res, taskResultPath[1])
         if (req.method === 'GET' && !pathname.startsWith('/api/')) return void serveFile(pathname, res)
