@@ -373,14 +373,18 @@ renderer.domElement.addEventListener('pointerup', (e) => {
 });
 
 const BASE_OFF = new THREE.Vector3(24, 70, 92);
+const PORTRAIT_OFF = new THREE.Vector3(80, 100, -12);
 function resize() {
-  const w = innerWidth, h = innerHeight, p = w > 900 && !viewOnly ? 296 : 0;
+  const w = innerWidth, h = innerHeight, p = w > 900 && !document.body.classList.contains('clean') ? 296 : 0;
   renderer.setSize(w, h);
   camera.aspect = w / h;
   camera.fov = 30;
   if (p) camera.setViewOffset(w + p, h, p, 0, w, h); else camera.clearViewOffset();
-  const A = (w - p) / h, f = Math.max(0.8, Math.pow(1.7 / A, 0.85));
-  camera.position.copy(controls.target).addScaledVector(BASE_OFF, f);
+  // A tall screen (a phone) looks along the office's long side, so the whole floor fits.
+  const A = (w - p) / h, tall = A < 0.85;
+  const off = tall ? PORTRAIT_OFF : BASE_OFF;
+  const f = tall ? Math.max(0.75, Math.pow(1.02 / A, 0.9)) : Math.max(0.8, Math.pow(1.7 / A, 0.85));
+  camera.position.copy(controls.target).addScaledVector(off, f);
   camera.updateProjectionMatrix();
   controls.update();
 }
@@ -598,6 +602,20 @@ fetch('api/hello', { cache: 'no-store' }).then((r) => r.json()).then((h) => {
   document.body.classList.add('view-only');
   resize();
 }).catch(() => {});
+
+// ---- Clean view for screenshots: H hides the interface, ?clean starts that way ----------------------
+const cleanHint = Object.assign(document.createElement('div'), { className: 'cleanhint', textContent: 'Press H to show the controls again' });
+document.body.appendChild(cleanHint);
+function setClean(on) {
+  document.body.classList.toggle('clean', on);
+  resize();
+  cleanHint.classList.toggle('show', on);
+  if (on) setTimeout(() => cleanHint.classList.remove('show'), 1800);
+}
+if (params.has('clean')) { setClean(true); cleanHint.classList.remove('show'); }
+addEventListener('keydown', (e) => {
+  if ((e.key === 'h' || e.key === 'H') && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.closest('input, textarea, select')) setClean(!document.body.classList.contains('clean'));
+});
 
 // ---- Phone layout: the agent list as a sheet that slides up --------------------------------------
 $('panelHead').onclick = (e) => {

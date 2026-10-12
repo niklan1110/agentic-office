@@ -39,7 +39,8 @@ claude plugin test plugin        # plugin tests
 ## Structure
 
 ```
-bin/agent-office.mjs      CLI: start, doctor, --help, --version
+bin/agent-office.mjs      CLI: start, plugin install, doctor, --help, --version
+scripts/capture.mjs       README screenshots through headless Chrome
 server/                   HTTP server, discovery, sessions and tasks, skill catalog, team launch
 public/                   the web app: setup (welcome, agents, launch) and the 3D office
 plugin/                   the Claude Code plugin (function hooks)
@@ -61,6 +62,10 @@ docs/                     this spec, architecture, ADRs, design handoff
 | `POST /api/tasks` | page | `{ text }` → queued task |
 | `GET /api/skills` | page | skill sources, areas, skills |
 | `GET /api/team`, `POST /api/launch` | page | the launched team; deploy a team |
+| `GET/POST /api/office` | page | the office theme `{ theme }`, saved in `.claude/agent-office/office.json` |
+| `POST /api/library/inspect`, `/upload`, `/add`, `/remove` | page | add skills from a GitHub link or a zip to `~/.agent-office/skills` |
+| `GET /api/summary`, `GET /api/offices` | page | this office in brief; every office on the computer (from `~/.agent-office/offices/`) |
+| `GET/POST /api/phone` | page | watch-only phone sharing: a second listener on the network, behind a secret link, serving only the office page and its live data |
 
 ## Boundaries
 

@@ -2,6 +2,20 @@
 
 ## 1.0.0-rc.1
 
+### Install
+- `npx agent-office` offers to add the plugin; `agent-office plugin install` does it directly. Both use the newest Claude Code on the computer, including the one inside VS Code.
+- A prompt that people paste into Claude Code to set it all up.
+
+### Look and sharing
+- Five themes: Warm studio, Late night, Cozy cabin, Glass HQ and Neon arcade.
+- A clean view for screenshots: <kbd>H</kbd>, or `?clean` in the link.
+- The Offices page lists every office on the computer.
+- View on phone: a watch-only link by QR code, on the home Wi-Fi.
+- Works on phones: the agent list becomes a bottom sheet, the camera frames tall screens, and drawing is lighter.
+
+### Skills
+- Add skills from a GitHub link or a zip to a personal library that every project uses.
+
 The first release as a standalone tool. It was previously the "office" and "office-bridge" prototype in my_selected_skills.
 
 ### Connection

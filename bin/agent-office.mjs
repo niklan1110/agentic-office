@@ -189,8 +189,8 @@ async function doctor(opts) {
 
   console.log(`Agent Office ${VERSION} doctor, for ${opts.project}\n`)
 
-  if (Number(process.versions.node.split('.')[0]) >= 20) ok(`Node ${process.versions.node}`)
-  else bad(`Node ${process.versions.node} is too old`, 'install Node 20 or newer')
+  if (Number(process.versions.node.split('.')[0]) >= 22) ok(`Node ${process.versions.node}`)
+  else bad(`Node ${process.versions.node} is too old`, 'install Node 22 or newer')
 
   const claude = findClaude()
 

@@ -20,6 +20,15 @@ claude plugin test plugin
 
 Use a current Claude Code to validate the plugin. Older CLIs reject the manifest before they get to the checks that matter. One rule they enforce: a function that is handed `$` must be declared at the top of `plugin/hooks/register.ts`.
 
+## Screenshots
+
+The README images come from a running office with a team, through headless Chrome:
+
+```bash
+node scripts/capture.mjs http://127.0.0.1:7777 docs/media            # all of them
+node scripts/capture.mjs http://127.0.0.1:7777 docs/media phone      # just one
+```
+
 ## Before you open a pull request
 
 - `npm test` and `claude plugin test plugin` pass, and `claude plugin validate plugin` passes.
