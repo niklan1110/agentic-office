@@ -37,6 +37,10 @@
   <div class="controls">
     <a class="btn edit-only" href="offices.html" title="All your running offices">Offices</a>
     <a class="btn edit-only" href="setup.html#agents" title="Add agents, name them and assign their skills">Edit team</a>
+    <div class="menuwrap edit-only">
+      <button class="btn" id="phoneBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="phoneMenu" title="Watch this office from your phone">Phone</button>
+      <div class="thememenu phonemenu" id="phoneMenu" role="dialog" aria-label="View on phone" hidden></div>
+    </div>
     <div class="menuwrap">
       <button class="btn" id="themeBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="themeMenu">Theme</button>
       <div class="thememenu" id="themeMenu" role="menu" hidden><div id="themeList"></div></div>

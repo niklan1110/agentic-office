@@ -3,7 +3,9 @@
 // the recommended one (GET /team), and deploys a team (POST /launch): skills into
 // the project's .claude/skills/, one subagent per agent into .claude/agents/.
 // Until it is launched, the team being edited is a draft kept in this browser.
+import { openLibraryDialog } from './library-dialog.js';
 import { ROLE_INFO } from './roles.js';
+import { THEMES } from './themes.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -98,9 +100,9 @@ function renderWelcome() {
 
     <ol class="how">
       <li><span class="n">1</span><h2>Create your agents</h2><p>As many as you need. Give each a name, a character for the office, and a line on what it is for.</p></li>
-      <li><span class="n">2</span><h2>Assign skills</h2><p>${skills.length} skills in ${groupCount} areas, from planning and web development to design, testing and security. Each comes with a short description.</p></li>
+      <li><span class="n">2</span><h2>Assign skills</h2><p>${skills.length} skills in ${groupCount} areas, each with a short description. Found more online? Add them from a GitHub link or a zip.</p></li>
       <li><span class="n">3</span><h2>Launch the workspace</h2><p>Each agent becomes a Claude Code subagent in <code>.claude/agents/</code>, with its skills copied to <code>.claude/skills/</code>.</p></li>
-      <li><span class="n">4</span><h2>Give them work</h2><p>Type a task in the office, or ask Claude in VS Code or the terminal: “Have <b>ada</b> build the login page.”</p></li>
+      <li><span class="n">4</span><h2>Watch them work</h2><p>Give a task in the office or in any Claude Code session, then watch the team at their desks: pick a theme, or follow along from your phone.</p></li>
     </ol>
 
     <div class="cta">
@@ -117,8 +119,8 @@ function renderWelcome() {
       <h2>${sessionLive() ? 'A Claude Code session is connected' : 'Optional: connect a Claude Code session'}</h2>
       <p>${sessionLive()
         ? 'The agent-office plugin is running in a Claude Code session of this project. It adds your agents to that session the moment you launch, runs tasks typed in the office, and shows the work live.'
-        : 'Agents you launch are in every Claude Code session you start in the project, with nothing else to install. For the live 3D view, tasks typed in the office, and agents added to a session that is already open, install the agent-office plugin once, in a terminal (this also covers VS Code):'}</p>
-      ${sessionLive() ? '' : '<pre><code>claude plugin marketplace add niklan1110/agent-office\nclaude plugin install agent-office@agent-office</code></pre><p class="fine">Then open Claude Code in this project. <code>npx agent-office doctor</code> checks the whole setup.</p>'}
+        : 'Agents you launch are in every Claude Code session you start in the project, with nothing else to install. For the live 3D view, tasks typed in the office, and agents added to a session that is already open, add the agent-office plugin to Claude Code once:'}</p>
+      ${sessionLive() ? '' : '<pre><code>npx agent-office plugin install</code></pre><p class="fine">It finds your Claude Code, the one inside VS Code included, and installs the plugin. Then open Claude Code in this project. <code>npx agent-office doctor</code> checks the whole setup.</p>'}
     </aside>`;
   const start = (team) => { draft = team; selected = draft.agents[0]?.id ?? 'manager'; changed(); go('agents'); };
   $('edit')?.addEventListener('click', () => start(store.get() ?? copy(server.team)));
@@ -244,7 +246,7 @@ function renderEditor() {
       <ul class="assigned" id="assigned"></ul>
     </div>
     <div class="block">
-      <div class="block-head"><h3>Add skills</h3></div>
+      <div class="block-head"><h3>Add skills</h3><button class="btn small" id="libAdd" type="button">＋ From GitHub or a zip…</button></div>
       <div class="finder">
         <label class="search"><span class="sr">Search skills</span>
           <input id="search" type="search" autocomplete="off" spellcheck="false" placeholder="Search names and descriptions, e.g. react…" value="${esc(browse.query)}"></label>
@@ -292,6 +294,24 @@ function renderEditor() {
   $('search').oninput = (e) => { clearTimeout(typing); typing = setTimeout(() => { browse.query = e.target.value.trim(); browse.limit = PAGE; renderCatalog(); }, 80); };
   $('mine').onchange = (e) => { browse.mine = e.target.checked; browse.limit = PAGE; renderCatalog(); };
   $('more').onclick = () => { browse.limit += PAGE; renderCatalog(); };
+  $('libAdd').onclick = () => openLibraryDialog({
+    groups,
+    known: new Set(skills.filter((x) => x.source === 'library').map((x) => x.name)),
+    agentName: isMgr ? draft.manager.name : a.name,
+    onAdded: async (names, give) => {
+      await reloadSkills();
+      if (give) {
+        const list = skillsOf();
+        const next = [...new Set([...list, ...names])].slice(0, server.limits.skills);
+        if (isMgr) draft.manager.skills = next; else a.skills = next;
+        changed();
+      }
+      browse = { ...browse, query: '', group: 'all', mine: false };
+      renderRoster();
+      renderEditor();
+      setStatus(`Added ${names.map((n) => `<code>${esc(n)}</code>`).join(' ')} to your library${give ? ` and gave ${names.length === 1 ? 'it' : 'them'} to ${esc(isMgr ? draft.manager.name : a.name)}` : ''}. They are in every project's skill list now.`, 'ok');
+    },
+  });
   renderAssigned();
   renderCatalog();
 }
@@ -470,6 +490,9 @@ function renderLaunch() {
         </ul>
         ${noSkills.length ? `<p class="warn">${esc(noSkills.map((a) => a.name).join(', '))} ${noSkills.length === 1 ? 'has' : 'have'} no skills. ${noSkills.length === 1 ? 'It' : 'They'} will still work, as general agents.</p>` : ''}
         ${problems.map((x) => `<p class="warn">${x}</p>`).join('')}
+        <h2 class="theme-h">Office look</h2>
+        <div class="themes" role="radiogroup" aria-label="Office theme">${THEMES.map((t) => `<label class="themecard"><input type="radio" name="theme" value="${t.id}" ${t.id === (server.theme ?? 'studio') ? 'checked' : ''}>
+          <span class="sw3" aria-hidden="true">${t.swatch.map((c) => `<i style="background:${c}"></i>`).join('')}</span><span><b>${esc(t.name)}</b><small>${esc(t.blurb)}</small></span></label>`).join('')}</div>
         <div class="cta left">
           <button class="primary big" id="launchBtn" type="button" ${problems.length ? 'disabled' : ''}>Launch workspace</button>
           <a class="btn" href="#agents">← Back to the agents</a>
@@ -477,6 +500,12 @@ function renderLaunch() {
       </div>
     </div>`;
   $('launchBtn').onclick = launch;
+  main.querySelectorAll('input[name=theme]').forEach((r) => {
+    r.onchange = async () => {
+      server.theme = r.value;
+      try { await fetch('api/office', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ theme: r.value }) }); } catch { /* chosen again in the office */ }
+    };
+  });
 }
 const skillCell = (list) => (list.length ? list.map((s) => `<code class="sk" translate="no">${esc(s)}</code>`).join(' ') : '<span class="sub">none</span>');
 
@@ -548,6 +577,13 @@ setInterval(async () => {
   try { const s = await (await fetch('api/status', { cache: 'no-store' })).json(); const was = sessionLive(); server.connected = s.connected; if (was !== sessionLive() && (view() === 'welcome' || view() === 'live')) render(); } catch { /* the server is away */ }
 }, 4000);
 
+async function reloadSkills() {
+  const s = await (await fetch('api/skills', { cache: 'no-store' })).json();
+  groups = s.groups;
+  skills = s.skills;
+  byName = new Map(skills.map((x) => [x.name, x]));
+}
+
 async function load() {
   setStatus('Loading…');
   try {
@@ -555,6 +591,7 @@ async function load() {
     if (!sRes.ok || !tRes.ok) throw new Error('the server answered ' + (sRes.ok ? tRes.status : sRes.status));
     const s = await sRes.json();
     server = await tRes.json();
+    server.theme = (await fetch('api/office', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}))).theme ?? 'studio';
     groups = s.groups;
     skills = s.skills;
     byName = new Map(skills.map((x) => [x.name, x]));

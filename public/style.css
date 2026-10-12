@@ -140,3 +140,16 @@ body.view-only .panel { display: none; }
   .legend { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .panel { transition: none; } }
+
+/* View on phone */
+.phonemenu { width: 300px; padding: 14px 16px; }
+.phonemenu h2 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.phonemenu .qr { background: #fff; border-radius: 10px; padding: 8px; width: 200px; margin: 6px auto 10px; }
+.phonemenu .qr svg { display: block; width: 100%; height: auto; }
+.phone-note { margin: 0 0 10px; font-size: 12.5px; line-height: 1.5; color: #55524C; }
+.phone-note.err { color: #9E2D25; }
+.phone-url code { font: 400 11px 'Geist Mono', monospace; color: #8A867E; overflow-wrap: anywhere; }
+.btn.small { padding: 8px 12px; font-size: 12.5px; }
+.primary-ish { background: #D97757 !important; color: #fff !important; border-color: #D97757 !important; }
+.primary-ish:hover { background: #C4633F !important; }
+body.dark .phone-note { color: #A9A7B8; }

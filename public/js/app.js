@@ -546,6 +546,7 @@ async function chooseTheme(id) {
 }
 $('themeBtn').onclick = () => {
   const menu = $('themeMenu');
+  $('phoneMenu').hidden = true;
   menu.hidden = !menu.hidden;
   $('themeBtn').setAttribute('aria-expanded', String(!menu.hidden));
   if (!menu.hidden) menu.querySelector('[aria-checked="true"]')?.focus();
@@ -553,6 +554,39 @@ $('themeBtn').onclick = () => {
 addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('themeMenu').hidden) { $('themeMenu').hidden = true; $('themeBtn').focus(); } });
 fetch('api/office', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((s) => s && setTheme(s.theme)).catch(() => setTheme('studio'));
 source?.addEventListener('office', (m) => { try { setTheme(JSON.parse(m.data).theme); } catch { /* not settings */ } });
+
+// ---- View on phone: a watch-only link on the home network, by QR code ------------------------------
+async function renderPhone(change) {
+  const menu = $('phoneMenu');
+  let s = { on: false };
+  try {
+    const res = change === undefined ? await fetch('api/phone', { cache: 'no-store' }) : await fetch('api/phone', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ on: change }) });
+    if (!res.ok) throw new Error(await res.text());
+    s = await res.json();
+  } catch (err) {
+    menu.innerHTML = `<p class="phone-note err">Could not turn it on: ${esc(err.message || err)}</p>`;
+    return;
+  }
+  menu.innerHTML = s.on
+    ? `<h2>Watch from your phone</h2>
+       <div class="qr">${s.qr}</div>
+       <p class="phone-note">Scan with your phone's camera on the same Wi-Fi. It can watch the office, not change anything. Windows may ask once to allow Node on private networks: allow it.</p>
+       <p class="phone-url"><code>${esc(s.url.replace(/\?k=.*/, '?k=…'))}</code></p>
+       <button class="btn small" id="phoneOff" type="button">Turn off</button>`
+    : `<h2>Watch from your phone</h2>
+       <p class="phone-note">Opens a watch-only link on your home Wi-Fi, behind a secret QR code. Nothing on the phone can change your team or reach Claude Code. Off until you turn it on, and off again when the office stops.</p>
+       <button class="btn small primary-ish" id="phoneOn" type="button">Turn on and show QR code</button>`;
+  $('phoneOn')?.addEventListener('click', () => renderPhone(true));
+  $('phoneOff')?.addEventListener('click', () => renderPhone(false));
+}
+$('phoneBtn').onclick = () => {
+  const menu = $('phoneMenu');
+  menu.hidden = !menu.hidden;
+  $('phoneBtn').setAttribute('aria-expanded', String(!menu.hidden));
+  $('themeMenu').hidden = true;
+  if (!menu.hidden) renderPhone();
+};
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('phoneMenu').hidden) { $('phoneMenu').hidden = true; $('phoneBtn').focus(); } });
 
 // ---- View only (opened from a phone) -------------------------------------------------------------
 // The phone link serves this same page; the server says so, and the controls that change things go.

@@ -2,6 +2,8 @@
 // agent-office: start the office for a project, or check why a session does not connect.
 
 import { spawn } from 'node:child_process'
+import { createInterface } from 'node:readline/promises'
+import { fileURLToPath } from 'node:url'
 import { access, readFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -9,11 +11,14 @@ import path from 'node:path'
 import { readDiscovery, runningServer } from '../server/discovery.mjs'
 import { VERSION, createServer, skillSources } from '../server/server.mjs'
 import { createCatalog } from '../server/catalog.mjs'
+import { findClaude, installPlugin, pluginInstalled } from '../server/claude.mjs'
 
 const HELP = `agent-office ${VERSION}
 
 Usage:
   agent-office [start] [options]   start the office for a project (the current directory by default)
+  agent-office plugin install      add the agent-office plugin to Claude Code (finds the newest Claude Code,
+                                   the one inside VS Code included)
   agent-office doctor [options]    check the server, the plugin and the skills, and say what to fix
 
 Options:
@@ -23,18 +28,20 @@ Options:
   --port <n>        the port to try first; the next free one is used if it is taken (default: 7777)
   --strict-port     fail instead of moving to the next free port
   --no-open         do not open the browser
+  -y, --yes         install the plugin without asking, when it is missing
+  --no-plugin       do not offer to install the plugin
+  --local           plugin install: use this copy of agent-office instead of GitHub (for development)
   -v, --version     print the version
   -h, --help        print this help
 
-In Claude Code, install the plugin once:
-  /plugin marketplace add niklan1110/agent-office
-  /plugin install agent-office@agent-office`
+The plugin is what connects Claude Code to the office: "agent-office plugin install" adds it.`
 
 function parse(argv) {
-  const opts = { command: 'start', project: process.cwd(), skills: [], port: 7777, strictPort: false, open: true }
+  const opts = { command: 'start', sub: '', project: process.cwd(), skills: [], port: 7777, strictPort: false, open: true, yes: false, offerPlugin: true, local: false }
   const args = [...argv]
 
   if (args[0] && !args[0].startsWith('-')) opts.command = args.shift()
+  if (opts.command === 'plugin' && args[0] && !args[0].startsWith('-')) opts.sub = args.shift()
 
   while (args.length) {
     const a = args.shift()
@@ -49,6 +56,9 @@ function parse(argv) {
     else if (a === '--port') opts.port = Number(value())
     else if (a === '--strict-port') opts.strictPort = true
     else if (a === '--no-open') opts.open = false
+    else if (a === '-y' || a === '--yes') opts.yes = true
+    else if (a === '--no-plugin') opts.offerPlugin = false
+    else if (a === '--local') opts.local = true
     else if (a === '-v' || a === '--version') opts.command = 'version'
     else if (a === '-h' || a === '--help') opts.command = 'help'
     else throw new Error(`unknown option ${a}`)
@@ -71,6 +81,47 @@ function openBrowser(url) {
   }
 }
 
+const PACKAGE_DIR = fileURLToPath(new URL('..', import.meta.url))
+const MARKETPLACE = 'niklan1110/agent-office'
+
+// Installs the plugin with the newest Claude Code found. Returns whether it is installed now.
+async function pluginInstall(opts) {
+  const claude = findClaude()
+
+  if (!claude) {
+    console.log('  Claude Code was not found on this computer. Install it from https://claude.com/claude-code, then run: npx agent-office plugin install')
+
+    return false
+  }
+
+  console.log('  Installing the agent-office plugin into Claude Code…')
+
+  const result = installPlugin(claude, opts.local ? PACKAGE_DIR : MARKETPLACE)
+
+  if (result.ok) console.log('  Done. Claude Code sessions you start from now on connect to the office by themselves.')
+  else console.log(`  The install did not finish:\n${result.out.split('\n').map((l) => '    ' + l).join('\n')}\n  Run \`npx agent-office doctor\` for what to fix.`)
+
+  return result.ok
+}
+
+// When the office starts and the plugin is missing: ask once (or install with --yes).
+async function offerPlugin(opts) {
+  if (!opts.offerPlugin || (await pluginInstalled())) return
+  if (opts.yes) return void (await pluginInstall(opts))
+  if (!process.stdin.isTTY) {
+    console.log('  Tip: the agent-office plugin is not installed yet. Install it with: npx agent-office plugin install')
+
+    return
+  }
+
+  const rl = createInterface({ input: process.stdin, output: process.stdout })
+  const answer = (await rl.question('  The agent-office plugin connects Claude Code to the office, and is not installed yet. Install it now? [Y/n] ')).trim().toLowerCase()
+
+  rl.close()
+  if (answer === '' || answer.startsWith('y')) await pluginInstall(opts)
+  else console.log('  Skipped. Install it later with: npx agent-office plugin install')
+}
+
 async function start(opts) {
   await access(opts.project).catch(() => {
     throw new Error(`no such project folder: ${opts.project}`)
@@ -84,6 +135,8 @@ async function start(opts) {
 
     return
   }
+
+  await offerPlugin(opts)
 
   const office = createServer({ projectDir: opts.project, collections: opts.skills })
   const url = await office.listen({ port: opts.port, strictPort: opts.strictPort })
@@ -117,7 +170,7 @@ async function start(opts) {
 }
 
 // What the plugin install in ~/.claude says, for doctor.
-async function pluginInstall(home = os.homedir()) {
+async function pluginRecords(home = os.homedir()) {
   const read = async (p) => JSON.parse(await readFile(p, 'utf8').catch(() => '{}'))
   const installed = (await read(path.join(home, '.claude', 'plugins', 'installed_plugins.json'))).plugins ?? {}
   const settings = await read(path.join(home, '.claude', 'settings.json'))
@@ -138,6 +191,11 @@ async function doctor(opts) {
 
   if (Number(process.versions.node.split('.')[0]) >= 20) ok(`Node ${process.versions.node}`)
   else bad(`Node ${process.versions.node} is too old`, 'install Node 20 or newer')
+
+  const claude = findClaude()
+
+  if (claude) ok(`Claude Code ${claude.version} (${claude.bin})`)
+  else bad('Claude Code was not found', 'install it from https://claude.com/claude-code')
 
   const server = await runningServer(opts.project)
   const recorded = await readDiscovery(opts.project)
@@ -161,10 +219,10 @@ async function doctor(opts) {
     }
   }
 
-  const plugin = await pluginInstall()
+  const plugin = await pluginRecords()
 
   if (plugin.current.length) ok(`plugin installed: ${plugin.current.map((p) => `${p.key} ${p.version ?? ''} (${p.scope})`).join('; ')}`)
-  else bad('the agent-office plugin is not installed in Claude Code', 'in Claude Code: /plugin marketplace add niklan1110/agent-office, then /plugin install agent-office@agent-office')
+  else bad('the agent-office plugin is not installed in Claude Code', 'npx agent-office plugin install')
   for (const key of new Set(plugin.old.map((p) => p.key))) {
     const installs = plugin.old.filter((p) => p.key === key).map((p) => `${p.version ?? '?'} (${p.scope}${p.projectPath ? ` ${p.projectPath}` : ''})`)
 
@@ -189,6 +247,8 @@ try {
   else if (opts.command === 'version') console.log(VERSION)
   else if (opts.command === 'start') await start(opts)
   else if (opts.command === 'doctor') await doctor(opts)
+  else if (opts.command === 'plugin' && opts.sub === 'install') process.exitCode = (await pluginInstall(opts)) ? 0 : 1
+  else if (opts.command === 'plugin') throw new Error('plugin needs a command: agent-office plugin install')
   else throw new Error(`unknown command ${opts.command}`)
 } catch (err) {
   console.error(`agent-office: ${err.message}\n\nRun agent-office --help for usage.`)
