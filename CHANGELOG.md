@@ -3,7 +3,7 @@
 ## 1.0.0-rc.1
 
 ### Install
-- `npx agent-office` offers to add the plugin; `agent-office plugin install` does it directly. Both use the newest Claude Code on the computer, including the one inside VS Code.
+- `npx github:niklan1110/agentic-office` offers to add the plugin; `agentic-office plugin install` does it directly. Both use the newest Claude Code on the computer, including the one inside VS Code.
 - A prompt that people paste into Claude Code to set it all up.
 
 ### Look and sharing
@@ -26,7 +26,7 @@ The first release as a standalone tool. It was previously the "office" and "offi
 - The port moves to the next free one when it is taken. A second start for the same project points to the office already running.
 
 ### Diagnostics
-- `agent-office doctor` checks the server, the plugin install and its version, old plugins, and skill sources.
+- `agentic-office doctor` checks the server, the plugin install and its version, old plugins, and skill sources.
 - `/office` in Claude Code, and an `office:` status line.
 - The office's connection chip opens a list of sessions with their project and plugin version.
 

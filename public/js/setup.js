@@ -120,7 +120,7 @@ function renderWelcome() {
       <p>${sessionLive()
         ? 'The agent-office plugin is running in a Claude Code session of this project. It adds your agents to that session the moment you launch, runs tasks typed in the office, and shows the work live.'
         : 'Agents you launch are in every Claude Code session you start in the project, with nothing else to install. For the live 3D view, tasks typed in the office, and agents added to a session that is already open, add the agent-office plugin to Claude Code once:'}</p>
-      ${sessionLive() ? '' : '<pre><code>npx agent-office plugin install</code></pre><p class="fine">It finds your Claude Code, the one inside VS Code included, and installs the plugin. Then open Claude Code in this project. <code>npx agent-office doctor</code> checks the whole setup.</p>'}
+      ${sessionLive() ? '' : '<pre><code>npx github:niklan1110/agentic-office plugin install</code></pre><p class="fine">It finds your Claude Code, the one inside VS Code included, and installs the plugin. Then open Claude Code in this project. <code>npx github:niklan1110/agentic-office doctor</code> checks the whole setup.</p>'}
     </aside>`;
   const start = (team) => { draft = team; selected = draft.agents[0]?.id ?? 'manager'; changed(); go('agents'); };
   $('edit')?.addEventListener('click', () => start(store.get() ?? copy(server.team)));

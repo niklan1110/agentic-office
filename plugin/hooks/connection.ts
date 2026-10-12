@@ -96,9 +96,9 @@ export function report(link: Link, now: number): string {
   const fix = {
     starting: 'Checking… run /office again in a few seconds.',
     connected: `Open ${link.url} to watch the team, or give it a task there.`,
-    'no-server': 'No office is running for this project. In a terminal in the project folder: npx agent-office',
-    unreachable: `The office at ${link.url} does not answer${link.lastError ? ` (${link.lastError})` : ''}. It may have stopped: start it again with npx agent-office in the project folder.`,
-    'other-project': `That office belongs to ${link.serverProject || 'another project'}. Start one for this project (npx agent-office in this folder), or clear the plugin's officeUrl option.`,
+    'no-server': 'No office is running for this project. In a terminal in the project folder: npx github:niklan1110/agentic-office',
+    unreachable: `The office at ${link.url} does not answer${link.lastError ? ` (${link.lastError})` : ''}. It may have stopped: start it again with npx github:niklan1110/agentic-office in the project folder.`,
+    'other-project': `That office belongs to ${link.serverProject || 'another project'}. Start one for this project (npx github:niklan1110/agentic-office in this folder), or clear the plugin's officeUrl option.`,
     'bad-url': 'The plugin\'s officeUrl option must be a local http address (127.0.0.1 or localhost). Clear it to find the office by itself.',
   }[link.state]
 

@@ -5,7 +5,7 @@ Thanks for helping. Agent Office is small on purpose: Node built-ins on the serv
 ## Set up
 
 ```bash
-git clone https://github.com/niklan1110/agent-office && cd agent-office
+git clone https://github.com/niklan1110/agentic-office && cd agentic-office
 npm test
 npm start -- --project ../some-project --skills ../some-skill-collection
 ```

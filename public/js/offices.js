@@ -24,9 +24,9 @@ async function refresh() {
   try {
     const { here, offices } = await (await fetch('api/offices', { cache: 'no-store' })).json();
     el.innerHTML = offices.map((o) => card(o, here)).join('')
-      + (offices.length < 2 ? `<p class="empty-state" style="grid-column:1/-1">${offices.length ? 'This is the only office running.' : 'No office is running.'} Start one for another project with <code>npx agent-office</code> in that project's folder, and it shows up here.</p>` : '');
+      + (offices.length < 2 ? `<p class="empty-state" style="grid-column:1/-1">${offices.length ? 'This is the only office running.' : 'No office is running.'} Start one for another project with <code>npx github:niklan1110/agentic-office</code> in that project's folder, and it shows up here.</p>` : '');
   } catch {
-    el.innerHTML = '<p class="empty-state" style="grid-column:1/-1">This office stopped. Start it again with <code>npx agent-office</code>.</p>';
+    el.innerHTML = '<p class="empty-state" style="grid-column:1/-1">This office stopped. Start it again with <code>npx github:niklan1110/agentic-office</code>.</p>';
   }
 }
 

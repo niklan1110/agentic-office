@@ -326,7 +326,7 @@ async function sendToSession(text) {
     sendNote = res.ok ? '' : `Not sent: ${(await res.text()) || res.statusText}.`;
     if (res.ok) sentId = (await res.json()).id;
   } catch {
-    sendNote = 'Not sent: the office server is not running. Start it in your project with npx agent-office.';
+    sendNote = 'Not sent: the office server is not running. Start it in your project with npx github:niklan1110/agentic-office.';
   }
   renderTask();
 }
@@ -486,10 +486,10 @@ function renderConnPanel() {
     return `<li class="${cls}"><b>${esc(shortPath(s.project) || 'unknown project')}</b><span>plugin ${esc(s.version || '?')} · ${esc(why)}</span></li>`;
   }).join('');
   const fix = !serverUp
-    ? 'The office server stopped. Start it again in your project: <code>npx agent-office</code>. This page reconnects by itself.'
+    ? 'The office server stopped. Start it again in your project: <code>npx github:niklan1110/agentic-office</code>. This page reconnects by itself.'
     : link.connected
       ? 'Tasks you type above go to the connected session.'
-      : `No Claude Code session of <code>${esc(shortPath(link.project))}</code> is connected. Open Claude Code in that folder with the agent-office plugin installed, and it shows up here within seconds. In a session, <code>/office</code> says what it sees. In a terminal, <code>npx agent-office doctor</code> checks everything.`;
+      : `No Claude Code session of <code>${esc(shortPath(link.project))}</code> is connected. Open Claude Code in that folder with the agentic-office plugin installed, and it shows up here within seconds. In a session, <code>/office</code> says what it sees. In a terminal, <code>npx github:niklan1110/agentic-office doctor</code> checks everything.`;
   panel.innerHTML = `<h2>Connection</h2><p class="meta">Project <code>${esc(link.project)}</code> · office ${esc(link.version)}</p>
     ${rows ? `<ul>${rows}</ul>` : '<p class="meta">No session has checked in yet.</p>'}<p class="fix">${fix}</p>`;
 }

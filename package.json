@@ -1,12 +1,28 @@
 {
-  "name": "agent-office",
+  "name": "agentic-office",
   "version": "1.0.0-rc.1",
   "description": "Build a team of Claude Code agents from skill collections, launch it into your project, and watch it work in a 3D office.",
-  "keywords": ["claude-code", "agents", "subagents", "skills", "three.js", "visualization"],
+  "keywords": [
+    "claude-code",
+    "agents",
+    "subagents",
+    "skills",
+    "three.js",
+    "visualization"
+  ],
   "license": "MIT",
+  "author": "niklan1110",
+  "homepage": "https://github.com/niklan1110/agentic-office#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/niklan1110/agentic-office.git"
+  },
+  "bugs": {
+    "url": "https://github.com/niklan1110/agentic-office/issues"
+  },
   "type": "module",
   "bin": {
-    "agent-office": "bin/agent-office.mjs"
+    "agentic-office": "bin/agent-office.mjs"
   },
   "files": [
     "bin/",

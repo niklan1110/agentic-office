@@ -209,7 +209,7 @@ describe('connection', () => {
   test('the /office report names the problem and the fix', () => {
     const link = { ...newLink(), project: '/work/app', version: '1.0.0', session: 's1' }
 
-    expect(report({ ...link, state: 'no-server' }, 0)).toContain('npx agent-office')
+    expect(report({ ...link, state: 'no-server' }, 0)).toContain('npx github:niklan1110/agentic-office')
     expect(report({ ...link, state: 'other-project', url: 'http://127.0.0.1:7777', serverProject: '/work/other' }, 0)).toContain('/work/other')
     expect(report({ ...link, state: 'connected', url: 'http://127.0.0.1:7777', serverVersion: '0.9.0', lastOkAt: 1000 }, 1500)).toContain('update the older one')
   })

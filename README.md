@@ -8,8 +8,8 @@
 
 Build a team of agents from skills, launch it into your project, and see who is thinking, typing and talking, live.
 
-[![CI](https://img.shields.io/github/actions/workflow/status/niklan1110/agent-office/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/niklan1110/agent-office/actions)
-[![License: MIT](https://img.shields.io/github/license/niklan1110/agent-office?style=flat-square)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/niklan1110/agentic-office/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/niklan1110/agentic-office/actions)
+[![License: MIT](https://img.shields.io/github/license/niklan1110/agentic-office?style=flat-square)](LICENSE)
 ![Node 22+](https://img.shields.io/badge/node-%E2%89%A522-339933?style=flat-square&logo=nodedotjs&logoColor=white)
 ![Zero dependencies](https://img.shields.io/badge/dependencies-0-2ea44f?style=flat-square)
 ![three.js](https://img.shields.io/badge/three.js-0.184-000?style=flat-square&logo=threedotjs)
@@ -35,7 +35,7 @@ Choose one of two ways:
 **A. One command**, run in your project folder:
 
 ```bash
-npx github:niklan1110/agent-office
+npx github:niklan1110/agentic-office
 ```
 
 It finds your Claude Code (including the one inside VS Code), offers to add the plugin, starts the office and opens it in your browser.
@@ -43,8 +43,8 @@ It finds your Claude Code (including the one inside VS Code), offers to add the 
 **B. One prompt.** Paste this into Claude Code in your project:
 
 ```text
-Set up Agent Office for this project: run `npx github:niklan1110/agent-office plugin install`,
-then start the office in the background with `npx github:niklan1110/agent-office --no-open`
+Set up Agent Office for this project: run `npx github:niklan1110/agentic-office plugin install`,
+then start the office in the background with `npx github:niklan1110/agentic-office --no-open`
 from this folder, and give me the link it prints.
 ```
 
@@ -131,7 +131,7 @@ flowchart LR
 <details>
 <summary><b>The office says "no Claude session connected"</b></summary>
 
-Run `npx github:niklan1110/agent-office doctor`. It checks Node, Claude Code, the plugin and its version, old plugins that compete with it, the server and your skills, and gives the fix for each problem.
+Run `npx github:niklan1110/agentic-office doctor`. It checks Node, Claude Code, the plugin and its version, old plugins that compete with it, the server and your skills, and gives the fix for each problem.
 
 Inside Claude Code, run `/office` to see what the session sees. In the office, click the connection chip under the title for the list of sessions that have checked in.
 </details>
@@ -139,7 +139,7 @@ Inside Claude Code, run `/office` to see what the session sees. In the office, c
 <details>
 <summary><b>"/plugin isn't available in this environment" (VS Code)</b></summary>
 
-Install the plugin from a terminal instead: `npx github:niklan1110/agent-office plugin install`. It uses the newest Claude Code it can find, including the one inside VS Code.
+Install the plugin from a terminal instead: `npx github:niklan1110/agentic-office plugin install`. It uses the newest Claude Code it can find, including the one inside VS Code.
 </details>
 
 <details>
@@ -158,9 +158,9 @@ The phone and the computer must be on the same Wi-Fi. The first time, Windows as
 <summary><b>Options</b></summary>
 
 ```text
-agent-office [start] [--project <dir>] [--skills <dir>]... [--port <n>] [--strict-port] [--no-open] [-y] [--no-plugin]
-agent-office plugin install [--local]
-agent-office doctor [--project <dir>]
+agentic-office [start] [--project <dir>] [--skills <dir>]... [--port <n>] [--strict-port] [--no-open] [-y] [--no-plugin]
+agentic-office plugin install [--local]
+agentic-office doctor [--project <dir>]
 ```
 
 | Option | Default | |
@@ -181,7 +181,7 @@ The plugin's options are under `/plugin` → agent-office → configure. Leave *
 
 ## Share your office
 
-Took a screenshot you like? Post it with **#AgentOffice**, or share it in [Discussions → Show and tell](https://github.com/niklan1110/agent-office/discussions). Press <kbd>H</kbd> first to hide the controls.
+Took a screenshot you like? Post it with **#AgentOffice**, or share it in [Discussions → Show and tell](https://github.com/niklan1110/agentic-office/discussions). Press <kbd>H</kbd> first to hide the controls.
 
 ## Contributing
 

@@ -7,7 +7,7 @@ An open-source local tool for Claude Code users: build a team of agents from ski
 **Users:** developers who use Claude Code (VS Code, terminal, desktop) and want named, skill-equipped subagents without writing agent files by hand.
 
 **Success looks like:**
-- From a fresh clone: `npx agent-office` in a project, then a team is launched in under 2 minutes without reading docs.
+- From a fresh clone: `npx github:niklan1110/agentic-office` in a project, then a team is launched in under 2 minutes without reading docs.
 - A Claude Code session in the project with the plugin installed shows as connected within 3 seconds of the server starting. Nobody types a port or URL.
 - When it is not connected, the page and the session both say why, with the one step that fixes it.
 - A task typed in the office is delivered to a session or reported as failed, with the reason. It is never silently lost.
@@ -28,10 +28,10 @@ An open-source local tool for Claude Code users: build a team of agents from ski
 ## Commands
 
 ```bash
-npx agent-office                 # start in the current project (or: agent-office start)
-agent-office --project ../app    # another project
-agent-office --skills ~/skills   # add a skill collection (repeatable)
-agent-office doctor              # check the server, the discovery file and the plugin install
+npx github:niklan1110/agentic-office                 # start in the current project (or: agentic-office start)
+agentic-office --project ../app    # another project
+agentic-office --skills ~/skills   # add a skill collection (repeatable)
+agentic-office doctor              # check the server, the discovery file and the plugin install
 npm test                         # server and page logic tests
 claude plugin test plugin        # plugin tests
 ```
