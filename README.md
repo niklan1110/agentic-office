@@ -13,9 +13,9 @@ Build a team of agents from skills, launch it into your project, and see who is 
 ![Node 22+](https://img.shields.io/badge/node-%E2%89%A522-339933?style=flat-square&logo=nodedotjs&logoColor=white)
 ![Zero dependencies](https://img.shields.io/badge/dependencies-0-2ea44f?style=flat-square)
 ![three.js](https://img.shields.io/badge/three.js-0.184-000?style=flat-square&logo=threedotjs)
-![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-D97757?style=flat-square&logo=claude&logoColor=white)
+![For Claude Code](https://img.shields.io/badge/for-Claude_Code-555?style=flat-square)
 
-[Quick start](#quick-start) · [Features](#features) · [How it works](#how-it-works) · [Troubleshooting](#troubleshooting) · [Share your office](#share-your-office)
+[Quick start](#quick-start) · [Features](#features) · [Themes](#five-office-themes) · [Troubleshooting](#troubleshooting) · [Share your office](#share-your-office)
 
 </div>
 
@@ -72,13 +72,18 @@ Found a skill on GitHub? Click **Add skills**, then paste a link to a repository
 
 <table>
   <tr>
-    <td><img src="docs/media/themes-cabin.webp" alt="Cozy cabin theme: honey-coloured wood and warm sunlight"></td>
-    <td><img src="docs/media/themes-glass.webp" alt="Glass HQ theme: cool, bright and clean"></td>
+    <td width="33%"><img src="docs/media/themes-studio.webp" alt="Warm studio theme: soft daylight on warm wood"><br><sub><b>Warm studio</b></sub></td>
+    <td width="33%"><img src="docs/media/themes-night.webp" alt="Late night theme: dark office, glowing monitors and desk lamps"><br><sub><b>Late night</b></sub></td>
+    <td width="33%"><img src="docs/media/themes-neon.webp" alt="Neon arcade theme: purple dusk with pink and cyan light"><br><sub><b>Neon arcade</b></sub></td>
   </tr>
-  <tr><td align="center">Cozy cabin</td><td align="center">Glass HQ</td></tr>
+  <tr>
+    <td width="33%"><img src="docs/media/themes-cabin.webp" alt="Cozy cabin theme: honey-coloured wood and warm sunlight"><br><sub><b>Cozy cabin</b></sub></td>
+    <td width="33%"><img src="docs/media/themes-glass.webp" alt="Glass HQ theme: cool, bright and clean"><br><sub><b>Glass HQ</b></sub></td>
+    <td width="33%" align="center"><sub>Press <kbd>H</kbd> in the office to hide the controls for a clean screenshot like these.</sub></td>
+  </tr>
 </table>
 
-The themes are Warm studio, Late night, Cozy cabin, Glass HQ and Neon arcade. Pick one when you launch, or any time from **Theme** in the office. Press <kbd>H</kbd> to hide the controls for a clean screenshot.
+Pick a theme when you launch, or any time from **Theme** in the office.
 
 ### Every office, and your phone
 
@@ -89,31 +94,6 @@ The themes are Warm studio, Late night, Cozy cabin, Glass HQ and Neon arcade. Pi
 - **The office in the browser** works with touch and on small screens. It draws lighter on phones and pauses in hidden tabs.
 
 <br clear="right">
-
-## How it works
-
-```mermaid
-flowchart LR
-  subgraph CC["Claude Code (VS Code · terminal · desktop)"]
-    P["agent-office plugin"]
-  end
-  subgraph You["Your computer"]
-    S["Agent Office server<br/>(one per project)"]
-    F[".claude/agents · .claude/skills"]
-  end
-  B["Browser: setup and 3D office"]
-  Ph["Phone (watch only)"]
-  P -- "events, heartbeats" --> S
-  S -- "tasks typed in the office" --> P
-  S -- "launch" --> F
-  F -- "read at session start" --> CC
-  S <--> B
-  S -. "secret QR link" .-> Ph
-```
-
-- **Connecting.** The server writes its address into `.claude/agent-office/server.json` in the project, and the plugin reads it, so a session finds its own project's office with nothing to configure. Sessions from other projects never get this project's tasks.
-- **Tasks from the office** are handed to one session. If no session confirms one, it is retried, and after three tries it is marked failed with the reason. It is never silently lost.
-- **Launching** writes plain files that Claude Code reads by itself. With the plugin, sessions that were already open get the team straight away.
 
 ## Controls
 
@@ -188,5 +168,8 @@ Took a screenshot you like? Post it with **#AgentOffice**, or share it in [Discu
 Issues and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) has the setup (no build step: `npm test`, then `npm start`), and [docs/spec.md](docs/spec.md) explains the design. To report a security problem, see [SECURITY.md](SECURITY.md).
 
 ## License
+
+Agent Office is an independent project. It is not made by, affiliated with or endorsed by Anthropic. Claude and Claude Code are trademarks of Anthropic.
+
 
 [MIT](LICENSE). Agent Office includes three.js (MIT), qrcode-generator (MIT) and the Geist fonts (OFL); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Skills you add keep their own licenses. The 3D office follows the design handoff in [docs/design/](docs/design/).
