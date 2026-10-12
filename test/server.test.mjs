@@ -7,6 +7,7 @@ import { after, before, test } from 'node:test'
 
 import { discoveryPath, readDiscovery, runningServer } from '../server/discovery.mjs'
 import { VERSION, createServer } from '../server/server.mjs'
+import { allow, fetchWithoutKey } from './key.mjs'
 
 let tmp, project, office, base
 
@@ -16,6 +17,7 @@ before(async () => {
   await mkdir(project)
   office = createServer({ projectDir: project, home: path.join(tmp, 'home'), appHome: path.join(tmp, 'app-home') })
   base = await office.listen({ port: 0, strictPort: true })
+  allow(base, office.key)
 })
 
 after(async () => {
@@ -30,7 +32,7 @@ const post = (p, body, headers = {}) =>
 function listen() {
   const seen = []
   const waiters = []
-  const req = http.get(`${base}/api/stream`, (res) => {
+  const req = http.get(`${base}/api/stream`, { headers: { 'x-agent-office-key': office.key } }, (res) => {
     let buf = ''
 
     res.setEncoding('utf8')
@@ -153,4 +155,63 @@ test('stopping the server removes its discovery file', async () => {
   assert.ok(JSON.parse(await readFile(discoveryPath(dir), 'utf8')).url)
   await third.close()
   assert.equal(await readDiscovery(dir), null)
+})
+
+test('without the key, another program on this computer can do nothing that matters', async () => {
+  const json = { 'content-type': 'application/json' }
+
+  assert.equal((await fetchWithoutKey(`${base}/api/status`)).status, 401)
+  assert.equal((await fetchWithoutKey(`${base}/api/stream`)).status, 401)
+  assert.equal((await fetchWithoutKey(`${base}/api/team`)).status, 401)
+  assert.equal((await fetchWithoutKey(`${base}/api/tasks`, { method: 'POST', headers: json, body: JSON.stringify({ text: 'x' }) })).status, 401)
+  assert.equal((await fetchWithoutKey(`${base}/api/sessions/heartbeat`, { method: 'POST', headers: json, body: JSON.stringify({ session: 's', project }) })).status, 401)
+  assert.equal((await fetchWithoutKey(`${base}/api/launch`, { method: 'POST', headers: json, body: '{}' })).status, 401)
+  assert.equal((await fetchWithoutKey(`${base}/api/events`, { method: 'POST', headers: json, body: '{"type":"task","text":"x"}' })).status, 401)
+  assert.equal((await fetchWithoutKey(`${base}/api/sessions/heartbeat`, { method: 'POST', headers: { ...json, 'x-agent-office-key': 'wrong' }, body: '{}' })).status, 401)
+
+  // The pages are locked; the app's public code is not secret.
+  for (const p of ['/', '/index.html', '/setup.html', '/offices.html']) {
+    const res = await fetchWithoutKey(`${base}${p}`)
+
+    assert.equal(res.status, 401, p)
+    assert.match(await res.text(), /locked to its owner/)
+  }
+  assert.equal((await fetchWithoutKey(`${base}/js/app.js`)).status, 200)
+
+  // hello says what it is, not whose project it is.
+  assert.deepEqual(Object.keys(await (await fetchWithoutKey(`${base}/api/hello`)).json()).sort(), ['app', 'version'])
+})
+
+test('the link with the key becomes a private cookie; a wrong link does not', async () => {
+  const wrong = await fetchWithoutKey(`${base}/?k=not-the-key`, { redirect: 'manual' })
+
+  assert.equal(wrong.status, 403)
+
+  const right = await fetchWithoutKey(`${base}/?k=${office.key}&from=setup`, { redirect: 'manual' })
+  const cookie = right.headers.get('set-cookie')
+
+  assert.equal(right.status, 303)
+  assert.equal(right.headers.get('location'), '/?from=setup')
+  assert.match(cookie, /HttpOnly/)
+  assert.match(cookie, /SameSite=Strict/)
+  assert.ok(!right.headers.get('location').includes(office.key), 'the key leaves the address bar')
+
+  const sent = cookie.split(';')[0]
+
+  assert.equal((await fetchWithoutKey(`${base}/api/status`, { headers: { cookie: sent } })).status, 200)
+  assert.equal((await fetchWithoutKey(`${base}/`, { headers: { cookie: sent } })).status, 200)
+})
+
+test('the key is kept in the project, readable only by its owner, and the plugin finds it', async () => {
+  const { keyPath } = await import('../server/auth.mjs')
+  const kept = (await readFile(keyPath(project), 'utf8')).trim()
+
+  assert.equal(kept, office.key)
+  assert.ok(kept.length >= 40)
+  assert.equal((await readDiscovery(project)).key, office.key)
+  if (process.platform !== 'win32') {
+    const { stat } = await import('node:fs/promises')
+
+    assert.equal((await stat(keyPath(project))).mode & 0o077, 0, 'no access for group or others')
+  }
 })

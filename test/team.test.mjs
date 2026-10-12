@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { createCatalog, parseFrontmatter, summarize } from '../server/catalog.mjs'
 import { GROUPS, groupOf } from '../server/groups.mjs'
 import { createServer } from '../server/server.mjs'
+import { allow } from './key.mjs'
 import { MARKER, RECOMMENDED, agentFile, normalize, slug } from '../server/team.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -28,6 +29,7 @@ before(async () => {
   await addSkill('beta', 'name: beta\ndescription: >\n  Folded beta text\n  over two lines.\ngroup: research')
   running = createServer({ projectDir, collections: [skillsDir], home: path.join(tmp, 'home'), appHome: path.join(tmp, 'app-home') })
   base = await running.listen({ port: 0, discovery: false })
+  allow(base, running.key)
 })
 
 after(async () => {

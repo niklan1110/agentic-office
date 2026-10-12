@@ -130,8 +130,10 @@ async function start(opts) {
   const already = await runningServer(opts.project)
 
   if (already) {
-    console.log(`The office for this project is already running: ${already.url}`)
-    if (opts.open) openBrowser(already.url)
+    const link = already.key ? `${already.url}/?k=${already.key}` : already.url
+
+    console.log(`The office for this project is already running: ${link}`)
+    if (opts.open) openBrowser(link)
 
     return
   }
@@ -139,11 +141,12 @@ async function start(opts) {
   await offerPlugin(opts)
 
   const office = createServer({ projectDir: opts.project, collections: opts.skills })
-  const url = await office.listen({ port: opts.port, strictPort: opts.strictPort })
+  await office.listen({ port: opts.port, strictPort: opts.strictPort })
   const skills = await createCatalog(skillSources(opts.project, opts.skills)).list()
 
   console.log(`Agent Office ${VERSION}`)
-  console.log(`  Office:   ${url}`)
+  console.log(`  Office:   ${office.link}`)
+  console.log("            (the link carries this project's key: only you can open the office)")
   console.log(`  Project:  ${opts.project}`)
   console.log(`  Skills:   ${skills.length} found${opts.skills.length ? '' : ' (add a collection with --skills <dir>)'}`)
   console.log('  Claude Code sessions in this project with the agent-office plugin connect by themselves.')
@@ -166,7 +169,7 @@ async function start(opts) {
 
   process.on('SIGINT', stop)
   process.on('SIGTERM', stop)
-  if (opts.open) openBrowser(url)
+  if (opts.open) openBrowser(office.link)
 }
 
 // What the plugin install in ~/.claude says, for doctor.
@@ -206,7 +209,7 @@ async function doctor(opts) {
 
   if (server) {
     try {
-      const status = await (await fetch(new URL('/api/status', server.url))).json()
+      const status = await (await fetch(new URL('/api/status', server.url), { headers: { 'x-agent-office-key': server.key ?? '' } })).json()
       const here = status.sessions.filter((s) => s.connected && s.match)
       const elsewhere = status.sessions.filter((s) => s.connected && !s.match)
 

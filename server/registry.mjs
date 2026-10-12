@@ -4,17 +4,18 @@
 // dropped the next time someone lists them.
 
 import { createHash } from 'node:crypto'
-import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { readdir, readFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+
+import { KEY_HEADER, writePrivate } from './auth.mjs'
 
 export const officesDir = (home = process.env.AGENT_OFFICE_HOME ?? path.join(os.homedir(), '.agent-office')) => path.join(home, 'offices')
 
 const fileFor = (dir, project) => path.join(dir, createHash('sha256').update(project.toLowerCase()).digest('hex').slice(0, 16) + '.json')
 
 export async function register(dir, info) {
-  await mkdir(dir, { recursive: true })
-  await writeFile(fileFor(dir, info.project), JSON.stringify({ ...info, pid: process.pid }, null, 2) + '\n')
+  await writePrivate(fileFor(dir, info.project), JSON.stringify({ ...info, pid: process.pid }, null, 2) + '\n')
 }
 
 export async function unregister(dir, project) {
@@ -65,9 +66,10 @@ export async function listOffices(dir, fetchImpl = fetch) {
       }
 
       try {
-        const res = await fetchImpl(new URL('/api/summary', info.url), { signal: AbortSignal.timeout(1500) })
+        const res = await fetchImpl(new URL('/api/summary', info.url), { signal: AbortSignal.timeout(1500), headers: info.key ? { [KEY_HEADER]: info.key } : {} })
 
-        return res.ok ? { ...(await res.json()), url: info.url } : null
+        // The link opens that office with its key (only you can see this list).
+        return res.ok ? { ...(await res.json()), url: info.url, open: info.key ? `${info.url}/?k=${info.key}` : info.url } : null
       } catch {
         return null
       }

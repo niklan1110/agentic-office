@@ -8,7 +8,7 @@ const el = document.getElementById('offices');
 function card(o, here) {
   const t = themeById(o.theme);
   const busy = o.busy + (o.managerBusy ? 1 : 0);
-  return `<a class="office${o.url === here ? ' here' : ''}" href="${esc(o.url)}/?from=offices">
+  return `<a class="office${o.url === here ? ' here' : ''}" href="${esc(o.open ?? o.url)}">
     <div class="row1"><span class="sw3" aria-hidden="true">${t.swatch.map((c) => `<i style="background:${c}"></i>`).join('')}</span>
       <div><h2>${esc(o.name)}</h2><p class="path">${esc(o.project)}</p></div></div>
     <div class="stats">

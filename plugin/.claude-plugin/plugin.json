@@ -1,6 +1,6 @@
 {
   "name": "agent-office",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "Connects Claude Code to Agent Office: finds the office server of your project by itself, shows your team working in a 3D office, runs the tasks you type there, and adds a team launched mid-session as agents.",
   "author": {
     "name": "niklan1110"

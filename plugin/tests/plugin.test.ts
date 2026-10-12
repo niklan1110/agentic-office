@@ -182,7 +182,8 @@ describe('connection', () => {
   })
 
   test('the discovery file gives the server address, or nothing', () => {
-    expect(parseDiscovery(JSON.stringify({ app: 'agent-office', url: 'http://127.0.0.1:7779' }))).toBe('http://127.0.0.1:7779')
+    expect(parseDiscovery(JSON.stringify({ app: 'agent-office', url: 'http://127.0.0.1:7779', key: 'k1' }))).toEqual({ base: 'http://127.0.0.1:7779', key: 'k1' })
+    expect(parseDiscovery(JSON.stringify({ app: 'agent-office', url: 'http://127.0.0.1:7779' }))).toEqual({ base: 'http://127.0.0.1:7779', key: '' })
     expect(parseDiscovery(JSON.stringify({ app: 'other', url: 'http://127.0.0.1:7779' }))).toBeUndefined()
     expect(parseDiscovery(JSON.stringify({ app: 'agent-office', url: 'http://evil.test' }))).toBeUndefined()
     expect(parseDiscovery('{')).toBeUndefined()
@@ -204,6 +205,7 @@ describe('connection', () => {
     expect(statusLine({ ...link, state: 'no-server' })).toBeUndefined()
     expect(statusLine({ ...link, state: 'connected' })).toBe('office: connected')
     expect(statusLine({ ...link, state: 'unreachable' })).toContain('/office')
+    expect(statusLine({ ...link, state: 'locked' })).toContain('key')
   })
 
   test('the /office report names the problem and the fix', () => {

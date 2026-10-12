@@ -9,11 +9,13 @@
 export const DISCOVERY_FILE = '.claude/agent-office/server.json'
 export const HEARTBEAT_EVERY_MS = 2000
 
-export type LinkState = 'starting' | 'connected' | 'no-server' | 'unreachable' | 'other-project' | 'bad-url'
+export type LinkState = 'starting' | 'connected' | 'no-server' | 'unreachable' | 'other-project' | 'bad-url' | 'locked'
 
 export type Link = {
   state: LinkState
   url: string
+  /** The project's office key, from the discovery file; sent with every request. */
+  key: string
   project: string
   serverProject: string
   serverVersion: string
@@ -24,7 +26,7 @@ export type Link = {
 }
 
 export const newLink = (): Link => ({
-  state: 'starting', url: '', project: '', serverProject: '', serverVersion: '', version: '', session: '', lastOkAt: 0, lastError: '',
+  state: 'starting', url: '', key: '', project: '', serverProject: '', serverVersion: '', version: '', session: '', lastOkAt: 0, lastError: '',
 })
 
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '[::1]'])
@@ -40,14 +42,15 @@ export function localBase(address: string): string | undefined {
   }
 }
 
-/** The server address in the discovery file's text, when it is a local one. */
-export function parseDiscovery(text: string | undefined): string | undefined {
+/** The server address and key in the discovery file's text, when the address is a local one. */
+export function parseDiscovery(text: string | undefined): { base: string; key: string } | undefined {
   if (text === undefined) return undefined
 
   try {
-    const info = JSON.parse(text) as { app?: unknown; url?: unknown }
+    const info = JSON.parse(text) as { app?: unknown; url?: unknown; key?: unknown }
+    const base = info?.app === 'agent-office' && typeof info.url === 'string' ? localBase(info.url) : undefined
 
-    return info?.app === 'agent-office' && typeof info.url === 'string' ? localBase(info.url) : undefined
+    return base ? { base, key: typeof info.key === 'string' ? info.key : '' } : undefined
   } catch {
     return undefined
   }
@@ -78,6 +81,7 @@ export function statusLine(link: Link): string | undefined {
     case 'unreachable': return 'office: not reachable · /office'
     case 'other-project': return 'office: other project · /office'
     case 'bad-url': return 'office: bad officeUrl · /office'
+    case 'locked': return 'office: key refused · /office'
     default: return undefined
   }
 }
@@ -100,6 +104,7 @@ export function report(link: Link, now: number): string {
     unreachable: `The office at ${link.url} does not answer${link.lastError ? ` (${link.lastError})` : ''}. It may have stopped: start it again with npx github:niklan1110/agentic-office in the project folder.`,
     'other-project': `That office belongs to ${link.serverProject || 'another project'}. Start one for this project (npx github:niklan1110/agentic-office in this folder), or clear the plugin's officeUrl option.`,
     'bad-url': 'The plugin\'s officeUrl option must be a local http address (127.0.0.1 or localhost). Clear it to find the office by itself.',
+    locked: 'The office refused this session\'s key. Restart the office (npx github:niklan1110/agentic-office in the project folder) so it writes its key file, or update this plugin (claude plugin update agent-office).',
   }[link.state]
 
   if (link.serverVersion && link.version && link.serverVersion !== link.version) {

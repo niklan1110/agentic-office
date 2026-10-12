@@ -3,8 +3,10 @@
 // the project; the plugin reads it on each heartbeat. The file goes when the server
 // stops; a file left by a server that crashed is noticed because nobody answers there.
 
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
+
+import { writePrivate } from './auth.mjs'
 
 export const DISCOVERY_FILE = path.join('.claude', 'agent-office', 'server.json')
 
@@ -13,8 +15,7 @@ export const discoveryPath = (projectDir) => path.join(projectDir, DISCOVERY_FIL
 export async function writeDiscovery(projectDir, info) {
   const file = discoveryPath(projectDir)
 
-  await mkdir(path.dirname(file), { recursive: true })
-  await writeFile(file, JSON.stringify({ ...info, pid: process.pid }, null, 2) + '\n')
+  await writePrivate(file, JSON.stringify({ ...info, pid: process.pid }, null, 2) + '\n')
 
   return file
 }

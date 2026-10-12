@@ -36,7 +36,7 @@ function setState($: EngineInterface, s: State, state: LinkState, error = '') {
 async function post($: EngineInterface, s: State, path: string, body: unknown) {
   return $.http.fetch(`${s.link.url}${path}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-agent-office-project': s.link.project },
+    headers: { 'content-type': 'application/json', 'x-agent-office-project': s.link.project, 'x-agent-office-key': s.link.key },
     body: JSON.stringify(body),
   })
 }
@@ -50,6 +50,7 @@ function send($: EngineInterface, s: State, event: OfficeEvent) {
     void post($, s, '/api/events', event)
       .then((res) => {
         if (res.status === 409) setState($, s, 'other-project')
+        if (res.status === 401) setState($, s, 'locked')
       })
       .catch(() => undefined)
   } catch {
@@ -135,8 +136,12 @@ async function heartbeat($: EngineInterface, s: State, opts: Options) {
 
     if (!base) return setState($, s, 'bad-url')
     s.link.url = base
+    s.link.key = parseDiscovery(await readText($, join(s.link.project, DISCOVERY_FILE)))?.key ?? ''
   } else {
-    const base = parseDiscovery(await readText($, join(s.link.project, DISCOVERY_FILE)))
+    const found = parseDiscovery(await readText($, join(s.link.project, DISCOVERY_FILE)))
+    const base = found?.base
+
+    s.link.key = found?.key ?? ''
 
     if (!base) return setState($, s, 'no-server')
     s.link.url = base
@@ -151,6 +156,7 @@ async function heartbeat($: EngineInterface, s: State, opts: Options) {
 
   const beat = res.ok ? parseBeat(res.text) : undefined
 
+  if (res.status === 401) return setState($, s, 'locked')
   if (!beat) return setState($, s, 'unreachable', `the server answered ${res.status}`)
 
   s.link.serverProject = beat.project

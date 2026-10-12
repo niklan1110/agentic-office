@@ -131,6 +131,12 @@ Inside Claude Code, run `/office` to see what the session sees. In the office, c
 </details>
 
 <details>
+<summary><b>The page says "locked to its owner"</b></summary>
+
+Each office has a key, so only you can use it: not other programs or other user accounts on your computer, and nothing from outside. Open the office from the link it printed in the terminal, or run `npx github:niklan1110/agentic-office` again in the project folder; it opens the right link and your browser remembers it. If a Claude Code session shows `office: key refused`, update the plugin with `claude plugin update agent-office`. [SECURITY.md](SECURITY.md) explains the key.
+</details>
+
+<details>
 <summary><b>"/plugin isn't available in this environment" (VS Code)</b></summary>
 
 Install the plugin from a terminal instead: `npx github:niklan1110/agentic-office plugin install`. It uses the newest Claude Code it can find, including the one inside VS Code.

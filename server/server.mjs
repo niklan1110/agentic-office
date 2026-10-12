@@ -14,6 +14,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { KEY_HEADER, LOCKED_PAGE, cookieName, keyOf, loadKey, newKey, sameKey } from './auth.mjs'
 import { createCatalog } from './catalog.mjs'
 import { removeDiscovery, writeDiscovery } from './discovery.mjs'
 import { GROUPS } from './groups.mjs'
@@ -32,6 +33,8 @@ export const VERSION = JSON.parse(readFileSync(path.join(here, '..', 'package.js
 const MAX_BODY = 8 * 1024
 const MAX_TEAM_BODY = 64 * 1024
 const LOOPBACK_ADDRESS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
+// Pages that show or change the office: locked without the key. Scripts, styles and fonts are public code.
+const LOCKED_PAGES = new Set(['/', '/index.html', '/setup.html', '/offices.html'])
 const LOOPBACK_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/
 const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -106,7 +109,7 @@ function cleanSettings(s) {
   }
 }
 
-export function createServer({ projectDir = process.cwd(), collections = [], home = os.homedir(), appHome, fetchImpl = fetch, backlogSize = 200, now = Date.now } = {}) {
+export function createServer({ projectDir = process.cwd(), collections = [], home = os.homedir(), appHome, fetchImpl = fetch, backlogSize = 200, now = Date.now, key: givenKey } = {}) {
   const project = path.resolve(projectDir)
   const library = createLibrary({ dir: libraryDir(appHome), fetchImpl })
   const catalog = createCatalog(skillSources(project, collections, home, library.dir))
@@ -352,6 +355,10 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
         'content-type': CONTENT_TYPES[path.extname(file)] ?? 'application/octet-stream',
         'x-content-type-options': 'nosniff',
         'cache-control': 'no-cache',
+        // Not inside another site's frame (clickjacking), and no address leaks in a Referer.
+        'x-frame-options': 'DENY',
+        'content-security-policy': "frame-ancestors 'none'",
+        'referrer-policy': 'no-referrer',
       })
       res.end(body)
     } catch {
@@ -378,7 +385,7 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
     const taskResultPath = /^\/api\/tasks\/(\d+)\/result$/.exec(pathname)
 
     switch (route) {
-      case 'GET /api/hello': return sendJson(res, 200, { app: 'agent-office', version: VERSION, project, url, viewOnly: Boolean(req.viewOnly) })
+      case 'GET /api/hello': return sendJson(res, 200, req.authed || req.viewOnly ? { app: 'agent-office', version: VERSION, project, url, viewOnly: Boolean(req.viewOnly) } : { app: 'agent-office', version: VERSION })
       case 'GET /api/phone': return sendJson(res, 200, phone.status())
       case 'POST /api/phone': return void phoneSwitch(req, res)
       case 'GET /api/status': return sendJson(res, 200, hub.status())
@@ -412,13 +419,46 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
       return sendText(res, 403, 'cross-origin requests are refused')
     }
 
+    const u = new URL(req.url ?? '/', 'http://localhost')
+    const given = u.searchParams.get('k')
+
+    // Opening the link with the key: keep it as a cookie, and drop it from the address bar.
+    if (req.method === 'GET' && given !== null) {
+      if (!sameKey(given, key)) {
+        res.writeHead(403, { 'content-type': 'text/html; charset=utf-8' })
+        return void res.end(LOCKED_PAGE)
+      }
+      u.searchParams.delete('k')
+      res.writeHead(303, { location: u.pathname + u.search, 'set-cookie': `${cookie}=${key}; HttpOnly; SameSite=Strict; Path=/; Max-Age=31536000` })
+      return void res.end()
+    }
+
+    req.authed = sameKey(keyOf(req, cookie), key)
+    if (!req.authed && u.pathname.startsWith('/api/') && u.pathname !== '/api/hello') {
+      req.resume()
+      return sendText(res, 401, 'this office needs its key: open it from the link Agent Office printed, or update the agent-office plugin')
+    }
+    if (!req.authed && LOCKED_PAGES.has(u.pathname)) {
+      res.writeHead(401, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
+      return void res.end(LOCKED_PAGE)
+    }
+
     return handle(req, res)
   })
   const phone = createPhoneShare({ handle })
+  const cookie = cookieName(project)
+  let key = givenKey ?? newKey()
 
   return {
     server,
     phone,
+    get key() {
+      return key
+    },
+    // The address to open in the browser: it carries the key once, then the cookie does.
+    get link() {
+      return `${url}/?k=${key}`
+    },
     hub,
     team,
     project,
@@ -445,8 +485,9 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
 
       url = `http://${host}:${server.address().port}`
       if (discovery) {
-        await writeDiscovery(project, { app: 'agent-office', url, version: VERSION, project, startedAt: now() })
-        await register(registry, { url, project, version: VERSION, startedAt: now() })
+        if (!givenKey) key = await loadKey(project)
+        await writeDiscovery(project, { app: 'agent-office', url, version: VERSION, project, startedAt: now(), key })
+        await register(registry, { url, project, version: VERSION, startedAt: now(), key })
       }
 
       return url

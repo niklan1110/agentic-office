@@ -7,6 +7,7 @@ import { deflateRawSync } from 'node:zlib'
 
 import { findSkills, parseGitHub } from '../server/library.mjs'
 import { createServer } from '../server/server.mjs'
+import { allow } from './key.mjs'
 import { safePath, unzip } from '../server/unzip.mjs'
 
 // A zip built by hand: [path, text, deflate?] entries. CRCs are left at 0; the reader does not check them.
@@ -116,6 +117,7 @@ before(async () => {
 
   office = createServer({ projectDir: project, home: path.join(tmp, 'home'), appHome: path.join(tmp, 'app-home'), fetchImpl })
   base = await office.listen({ port: 0, discovery: false })
+  allow(base, office.key)
 })
 
 after(async () => {

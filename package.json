@@ -1,6 +1,6 @@
 {
   "name": "agentic-office",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "Build a team of Claude Code agents from skill collections, launch it into your project, and watch it work in a 3D office.",
   "keywords": [
     "claude-code",

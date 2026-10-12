@@ -7,6 +7,7 @@ import { after, before, test } from 'node:test'
 
 import { lanAddress } from '../server/phone.mjs'
 import { createServer } from '../server/server.mjs'
+import { allow } from './key.mjs'
 
 let tmp, a, b, baseA, baseB
 
@@ -18,6 +19,8 @@ before(async () => {
   b = createServer(opts('beta'))
   baseA = await a.listen({ port: 0 })
   baseB = await b.listen({ port: 0 })
+  allow(baseA, a.key)
+  allow(baseB, b.key)
 })
 
 after(async () => {

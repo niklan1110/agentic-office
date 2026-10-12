@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.0-rc.2
+
+### Security
+
+- Each office has a per-project key. Without it, other programs and other user accounts on the computer cannot send tasks, read tasks or sessions, pose as your Claude Code session, or change your team. The browser gets the key from the link the office opens, as an HttpOnly, SameSite=Strict cookie. The plugin reads it from the project.
+- Pages cannot be framed by other sites, and send no Referer header.
+- `scripts/attack.mjs` tries each way in and reports what got through.
+- The plugin must be 1.0.0-rc.2 or newer: run `claude plugin update agent-office`.
+
+### Fixed
+
+- Agents no longer teleport and the office no longer flickers. A side effect of the recording mode made each frame jump forward.
+
 ## 1.0.0-rc.1
 
 ### Install
