@@ -85,3 +85,58 @@ button.conn:focus-visible { outline: 2px solid #C4633F; outline-offset: 2px; }
 .connpanel li span { font: 400 11.5px/1.3 'Geist Mono', monospace; color: #6B6862; }
 .connpanel .fix { margin: 8px 0 0; color: #3A3833; }
 .connpanel code { font: 400 12px 'Geist Mono', monospace; background: rgba(0,0,0,.06); padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
+
+/* Project name in the title */
+.title h1 .proj { font-weight: 400; color: #8A867E; margin-left: 6px; }
+.title h1 .proj:empty { display: none; }
+.title h1 .proj::before { content: '· '; }
+
+/* Theme menu */
+.menuwrap { position: relative; }
+.thememenu { position: absolute; right: 0; top: calc(100% + 6px); width: 300px; padding: 6px; background: rgba(255,255,255,.98); border: 1px solid rgba(0,0,0,.08); border-radius: 12px; box-shadow: 0 12px 32px rgba(60,40,20,.18); z-index: 6; }
+.thememenu button { width: 100%; appearance: none; border: 0; background: transparent; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; cursor: pointer; text-align: left; font: inherit; color: #1F1E1C; min-height: 44px; }
+.thememenu button:hover, .thememenu button:focus-visible { background: #F3F1EC; outline: none; }
+.thememenu button[aria-checked="true"] { background: #F3EEE6; box-shadow: inset 0 0 0 1px rgba(0,0,0,.1); }
+.thememenu b { display: block; font-size: 13px; font-weight: 500; }
+.thememenu small { display: block; font-size: 11.5px; color: #75726B; margin-top: 2px; }
+.sw3 { display: flex; flex: none; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+.sw3 i { width: 12px; height: 26px; }
+
+/* Dark themes: the panels follow */
+body.dark { background: #161925; color: #E8E6F0; }
+body.dark .panel, body.dark .seg, body.dark .btn, body.dark .task, body.dark .conn, body.dark .legend, body.dark .connpanel, body.dark .thememenu { background: rgba(28,30,44,.9); border-color: rgba(255,255,255,.08); color: #E8E6F0; }
+body.dark .btn:hover, body.dark .seg button:hover { color: #fff; background: rgba(40,43,62,.95); }
+body.dark .seg button, body.dark .legend, body.dark .title p, body.dark .hint { color: #A9A7B8; }
+body.dark .seg button.on { background: #E8E6F0; color: #161925; }
+body.dark .task input { color: #E8E6F0; }
+body.dark .task input::placeholder, body.dark .nm span, body.dark .meta, body.dark .taskcard .note, body.dark .thememenu small { color: #9C9AAD; }
+body.dark .row:hover, body.dark .thememenu button:hover { background: rgba(255,255,255,.05); }
+body.dark .row.sel, body.dark .taskcard, body.dark .connpanel li, body.dark .thememenu button[aria-checked="true"] { background: rgba(255,255,255,.07); }
+body.dark .taskcard .txt, body.dark .thememenu button, body.dark .title h1, body.dark a { color: #E8E6F0; }
+body.dark .tag { background: rgba(28,30,44,.88); color: #E8E6F0; }
+body.dark .tag.sel { background: #E8E6F0; color: #161925; }
+body.dark .pick button { background: rgba(255,255,255,.06); color: #E8E6F0; border-color: rgba(255,255,255,.1); }
+
+/* Opened from a phone: watching only */
+body.view-only .edit-only, body.view-only .pick, body.view-only .hint { display: none !important; }
+body.view-only .panel { display: none; }
+
+/* Phones and narrow windows: the agent list becomes a sheet at the bottom */
+@media (max-width: 900px) {
+  .panel { display: flex; top: auto; left: 0; right: 0; bottom: 0; width: auto; height: min(62vh, 520px); border-radius: 16px 16px 0 0; transform: translateY(calc(100% - 56px - env(safe-area-inset-bottom))); transition: transform .25s ease; padding-bottom: env(safe-area-inset-bottom); z-index: 4; }
+  .panel.open { transform: none; }
+  .panel header { cursor: pointer; padding: 18px 16px 14px; min-height: 56px; align-items: center; }
+  .panel header::before { content: ''; position: absolute; left: 50%; top: 7px; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: rgba(0,0,0,.18); }
+  body.dark .panel header::before { background: rgba(255,255,255,.25); }
+  .legend { bottom: 70px; }
+  .bar { top: max(12px, env(safe-area-inset-top)); left: 12px; right: 12px; }
+  .title h1 { font-size: 16px; }
+  .thememenu { right: auto; left: 0; }
+}
+@media (max-width: 560px) {
+  .task { flex: 1 1 100%; }
+  .task input { width: auto; font-size: 16px; }
+  #motion { display: none; }
+  .legend { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .panel { transition: none; } }

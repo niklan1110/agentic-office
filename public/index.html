@@ -31,12 +31,17 @@
 
 <div class="bar">
   <div class="title">
-    <h1>Agent Office</h1>
+    <h1>Agent Office <span class="proj" id="projectName"></span></h1>
     <p><button type="button" id="conn" class="conn" aria-expanded="false" aria-controls="connPanel" title="Connection details">starting…</button><span class="sum" id="summary">10 agents</span></p>
   </div>
   <div class="controls">
-    <a class="btn" href="setup.html#agents" title="Add agents, name them and assign their skills">Edit team</a>
-    <form class="task" id="taskForm">
+    <a class="btn edit-only" href="offices.html" title="All your running offices">Offices</a>
+    <a class="btn edit-only" href="setup.html#agents" title="Add agents, name them and assign their skills">Edit team</a>
+    <div class="menuwrap">
+      <button class="btn" id="themeBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="themeMenu">Theme</button>
+      <div class="thememenu" id="themeMenu" role="menu" hidden><div id="themeList"></div></div>
+    </div>
+    <form class="task edit-only" id="taskForm">
       <input id="taskInput" placeholder="Give the team a task…" autocomplete="off">
       <button id="taskBtn" type="submit" title="Call the team together and send this task to your Claude Code session">Call meeting</button>
     </form>
@@ -44,14 +49,14 @@
       <button data-m="live" class="on">Live</button>
       <button data-m="static">Static</button>
     </div>
-    <button class="btn on" id="meet" title="Call a meeting whenever you give Claude a new task"><span class="sw"></span>Meet on task</button>
+    <button class="btn on edit-only" id="meet" title="Call a meeting whenever you give Claude a new task"><span class="sw"></span>Meet on task</button>
   </div>
 </div>
 
 <section class="connpanel" id="connPanel" hidden aria-live="polite"></section>
 
-<aside class="panel">
-  <header><span>Agents <span id="count"></span></span><a href="characters.html">Character sheet ↗</a></header>
+<aside class="panel" id="panel">
+  <header id="panelHead" aria-expanded="false"><span>Agents <span id="count"></span></span><a href="characters.html">Character sheet ↗</a></header>
   <div class="taskcard" id="taskcard"></div>
   <div class="list" id="list"></div>
 </aside>

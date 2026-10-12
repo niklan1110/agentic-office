@@ -9,6 +9,7 @@ import { buildGraph, routeAt, routeBetween } from './nav.js';
 import { buildOffice3, NODES, EDGES, SPOTS, ERRANDS, ITEM_NAMES, makeItem } from './office-v3.js';
 import { validate } from './protocol.js';
 import { ROLE_IDS, setTeamCharacters } from './roles.js';
+import { THEMES, applyTheme, themeById } from './themes.js';
 
 if (ROLES.map((r) => r.id).join() !== ROLE_IDS.join()) throw new Error('roles.js and agents.js disagree about the roles');
 
@@ -21,7 +22,8 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const BG = '#EFE6DA';
 const host = $('scene');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+const SMALL = matchMedia('(max-width: 900px), (pointer: coarse)').matches;
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, SMALL ? 1.5 : 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 host.appendChild(renderer.domElement);
@@ -37,11 +39,12 @@ controls.maxPolarAngle = 1.3;
 controls.minDistance = 25;
 controls.maxDistance = 300;
 
-scene.add(new THREE.HemisphereLight(0xfff1dd, 0xb49a80, 1.0));
+const hemi = new THREE.HemisphereLight(0xfff1dd, 0xb49a80, 1.0);
+scene.add(hemi);
 const key = new THREE.DirectionalLight(0xffe2bf, 1.9);
 key.position.set(55, 95, 70);
 key.castShadow = true;
-key.shadow.mapSize.set(4096, 4096);
+key.shadow.mapSize.set(SMALL ? 1024 : 2048, SMALL ? 1024 : 2048);
 Object.assign(key.shadow.camera, { left: -75, right: 75, top: 75, bottom: -75, near: 1, far: 320 });
 key.shadow.bias = -0.0004;
 key.shadow.normalBias = 0.03;
@@ -72,6 +75,7 @@ const nameOf = (a) => {
 };
 const onTeam = (a) => !crew || a.role.id === 'manager' || Boolean(onDesk[a.role.id]?.length);
 
+let viewOnly = false; // opened from a phone: watch only
 let state = createState();
 let autoMeeting = true;
 let paused = false;
@@ -95,6 +99,7 @@ const agents = ROLES.map((r, i) => {
   a.carry = null;
   a.status = 'idle';
   a.ind = buildStatusIndicator();
+  a.ind.group.userData.keepColor = true;
   a.ind.set(a.status);
   scene.add(a.ind.group);
   const tag = document.createElement('div');
@@ -344,7 +349,7 @@ const simBtn = $('sim');
 const meetBtn = $('meet');
 meetBtn.onclick = () => { autoMeeting = !autoMeeting; meetBtn.classList.toggle('on', autoMeeting); };
 
-const ringMat = new THREE.MeshBasicMaterial({ color: '#1F1E1C', transparent: true, opacity: 0.75 });
+const ringMat = new THREE.MeshBasicMaterial({ color: '#D97757', transparent: true, opacity: 0.85 });
 const ring = new THREE.Group();
 [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([sx, sz]) => {
   const m = new THREE.Mesh(new THREE.BoxGeometry(sx ? 0.35 : 10, 0.06, sz ? 0.35 : 8), ringMat);
@@ -352,6 +357,7 @@ const ring = new THREE.Group();
   ring.add(m);
 });
 ring.visible = false;
+ring.userData.keepColor = true;
 scene.add(ring);
 
 const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
@@ -368,7 +374,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
 
 const BASE_OFF = new THREE.Vector3(24, 70, 92);
 function resize() {
-  const w = innerWidth, h = innerHeight, p = w > 900 ? 296 : 0;
+  const w = innerWidth, h = innerHeight, p = w > 900 && !viewOnly ? 296 : 0;
   renderer.setSize(w, h);
   camera.aspect = w / h;
   camera.fov = 30;
@@ -517,13 +523,66 @@ renderTask();
 setConn('connecting…');
 connect();
 
+// ---- Theme ---------------------------------------------------------------------------------------
+let theme = 'studio';
+function setTheme(id) {
+  theme = themeById(id).id;
+  applyTheme(THREE, { scene, hemi, key, win }, theme);
+  renderThemes();
+}
+function renderThemes() {
+  const el = $('themeList');
+  if (!el) return;
+  el.innerHTML = THEMES.map((t) => `<button type="button" role="menuitemradio" aria-checked="${t.id === theme}" data-t="${t.id}">
+    <span class="sw3" aria-hidden="true">${t.swatch.map((c) => `<i style="background:${c}"></i>`).join('')}</span>
+    <span><b>${esc(t.name)}</b><small>${esc(t.blurb)}</small></span></button>`).join('');
+  el.querySelectorAll('button').forEach((b) => { b.onclick = () => chooseTheme(b.dataset.t); });
+}
+async function chooseTheme(id) {
+  setTheme(id);
+  $('themeMenu').hidden = true;
+  $('themeBtn').setAttribute('aria-expanded', 'false');
+  try { await fetch('api/office', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ theme: id }) }); } catch { /* the look still changed here */ }
+}
+$('themeBtn').onclick = () => {
+  const menu = $('themeMenu');
+  menu.hidden = !menu.hidden;
+  $('themeBtn').setAttribute('aria-expanded', String(!menu.hidden));
+  if (!menu.hidden) menu.querySelector('[aria-checked="true"]')?.focus();
+};
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('themeMenu').hidden) { $('themeMenu').hidden = true; $('themeBtn').focus(); } });
+fetch('api/office', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((s) => s && setTheme(s.theme)).catch(() => setTheme('studio'));
+source?.addEventListener('office', (m) => { try { setTheme(JSON.parse(m.data).theme); } catch { /* not settings */ } });
+
+// ---- View only (opened from a phone) -------------------------------------------------------------
+// The phone link serves this same page; the server says so, and the controls that change things go.
+fetch('api/hello', { cache: 'no-store' }).then((r) => r.json()).then((h) => {
+  $('projectName').textContent = h.project ? h.project.split(/[\\/]/).filter(Boolean).pop() : '';
+  document.title = `${$('projectName').textContent || 'Agent Office'} · Agent Office`;
+  if (!h.viewOnly) return;
+  viewOnly = true;
+  document.body.classList.add('view-only');
+  resize();
+}).catch(() => {});
+
+// ---- Phone layout: the agent list as a sheet that slides up --------------------------------------
+$('panelHead').onclick = (e) => {
+  if (innerWidth > 900 || e.target.closest('a')) return;
+  const panel = $('panel');
+  panel.classList.toggle('open');
+  $('panelHead').setAttribute('aria-expanded', String(panel.classList.contains('open')));
+};
+
+// Nothing to draw while the tab is hidden: saves the battery and the fan.
+document.addEventListener('visibilitychange', () => { renderer.setAnimationLoop(document.hidden ? null : frame); if (!document.hidden) clock.getDelta(); });
+
 // ---- Frame loop ----------------------------------------------------------------------------------
 const clock = new THREE.Clock();
 const lerpAngle = (a, b, k) => a + ((((b - a + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * k;
 const SPEED = 7.5;
 const bubble = $('bubble'), bubbleTxt = bubble.querySelector('span');
 
-renderer.setAnimationLoop(() => {
+function frame() {
   const dt = Math.min(clock.getDelta(), 0.05) * SPEED_UP, t = clock.elapsedTime;
   const k = 1 - Math.exp(-dt * 9);
   if (!paused && phase !== 'none') tickMeeting(dt);
@@ -579,4 +638,5 @@ renderer.setAnimationLoop(() => {
   if (selected >= 0) { const a = agents[selected]; ring.position.set(a.root.position.x, 0, a.root.position.z); ring.rotation.y = a.root.rotation.y; }
   controls.update();
   renderer.render(scene, camera);
-});
+}
+renderer.setAnimationLoop(frame);

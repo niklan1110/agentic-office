@@ -62,7 +62,7 @@ function listen() {
 test('hello says what it is, and the discovery file points at it', async () => {
   const hello = await (await fetch(`${base}/api/hello`)).json()
 
-  assert.deepEqual(hello, { app: 'agent-office', version: VERSION, project, url: base })
+  assert.deepEqual(hello, { app: 'agent-office', version: VERSION, project, url: base, viewOnly: false })
   assert.equal((await readDiscovery(project)).url, base)
   assert.equal((await runningServer(project)).url, base)
 })

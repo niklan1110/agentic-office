@@ -8,7 +8,7 @@
 // page in your browser cannot drive it).
 
 import { readFileSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
@@ -19,8 +19,11 @@ import { removeDiscovery, writeDiscovery } from './discovery.mjs'
 import { GROUPS } from './groups.mjs'
 import { createHub, samePath } from './hub.mjs'
 import { MAX_ZIP, createLibrary, libraryDir } from './library.mjs'
+import { createPhoneShare } from './phone.mjs'
+import { listOffices, officesDir, register, unregister } from './registry.mjs'
 import { CHARACTERS, LIMITS, MODELS, RECOMMENDED, createTeamStore } from './team.mjs'
 import { validate } from '../public/js/protocol.js'
+import { THEMES } from '../public/js/themes.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const PUBLIC = path.join(here, '..', 'public')
@@ -100,6 +103,53 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
     for (const client of clients) client.write(line)
   }
   const hub = createHub({ project, version: VERSION, now, onChange: () => broadcast('status', hub.status()) })
+  const registry = officesDir(appHome)
+  const settingsFile = path.join(project, '.claude', 'agent-office', 'office.json')
+
+  // The office's look, per project: { theme }.
+  async function readSettings() {
+    try {
+      const saved = JSON.parse(await readFile(settingsFile, 'utf8'))
+
+      return { theme: THEMES.some((t) => t.id === saved.theme) ? saved.theme : 'studio' }
+    } catch {
+      return { theme: 'studio' }
+    }
+  }
+
+  async function saveSettings(req, res) {
+    const body = await jsonBody(req, res)
+
+    if (body === undefined) return
+    if (!THEMES.some((t) => t.id === body.theme)) return sendText(res, 400, `theme must be one of ${THEMES.map((t) => t.id).join(', ')}`)
+
+    const settings = { ...(await readSettings()), theme: body.theme }
+
+    await mkdir(path.dirname(settingsFile), { recursive: true })
+    await writeFile(settingsFile, JSON.stringify(settings, null, 2) + '\n')
+    broadcast('office', settings)
+
+    return sendJson(res, 200, settings)
+  }
+  const active = new Map() // agent → when it last did something, for "busy" on the Offices page
+
+  // A short summary for the Offices page: who this is, its theme, how busy.
+  async function summary() {
+    const launched = await team.read()
+    const busy = [...active].filter(([id, at]) => id !== 'main' && now() - at < 15000).length
+
+    return {
+      app: 'agent-office',
+      version: VERSION,
+      project,
+      name: path.basename(project),
+      theme: (await readSettings()).theme,
+      agents: launched?.agents.length ?? 0,
+      busy,
+      managerBusy: now() - (active.get('main') ?? 0) < 15000,
+      connected: hub.status().connected,
+    }
+  }
 
   async function ingest(req, res) {
     const sender = req.headers['x-agent-office-project']
@@ -122,6 +172,9 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
 
     backlog.push(event)
     if (backlog.length > backlogSize) backlog.shift()
+    if (event.type === 'done') active.delete(event.agent)
+    else if (event.agent) active.set(event.agent, now())
+    else if (event.type === 'task') active.set('main', now())
     broadcast('', event)
 
     return sendText(res, 202, 'accepted')
@@ -281,20 +334,33 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
     }
   }
 
-  const server = http.createServer((req, res) => {
-    if (!LOOPBACK_ADDRESS.has(req.socket.remoteAddress)) return sendText(res, 403, 'local only')
-    if (!LOOPBACK_HOST.test(req.headers.host ?? '')) return sendText(res, 403, 'bad host')
-    if (req.method === 'POST' && req.headers.origin !== undefined && req.headers.origin !== `http://${req.headers.host}`) {
-      return sendText(res, 403, 'cross-origin requests are refused')
-    }
+  async function phoneSwitch(req, res) {
+    const body = await jsonBody(req, res)
 
+    if (body === undefined) return
+
+    try {
+      return sendJson(res, 200, body.on ? await phone.enable() : await phone.disable())
+    } catch (err) {
+      return sendText(res, 400, err.message)
+    }
+  }
+
+  // Every route. The phone door (phone.mjs) calls this too, with req.viewOnly set, for the few GETs it lets through.
+  function handle(req, res) {
     const { pathname } = new URL(req.url ?? '/', 'http://localhost')
     const route = `${req.method} ${pathname}`
     const taskResultPath = /^\/api\/tasks\/(\d+)\/result$/.exec(pathname)
 
     switch (route) {
-      case 'GET /api/hello': return sendJson(res, 200, { app: 'agent-office', version: VERSION, project, url })
+      case 'GET /api/hello': return sendJson(res, 200, { app: 'agent-office', version: VERSION, project, url, viewOnly: Boolean(req.viewOnly) })
+      case 'GET /api/phone': return sendJson(res, 200, phone.status())
+      case 'POST /api/phone': return void phoneSwitch(req, res)
       case 'GET /api/status': return sendJson(res, 200, hub.status())
+      case 'GET /api/office': return void readSettings().then((x) => sendJson(res, 200, x))
+      case 'POST /api/office': return void saveSettings(req, res)
+      case 'GET /api/summary': return void summary().then((x) => sendJson(res, 200, x))
+      case 'GET /api/offices': return void listOffices(registry).then((offices) => sendJson(res, 200, { here: url, offices }))
       case 'GET /api/stream': return stream(req, res)
       case 'GET /api/skills': return void listSkills(res)
       case 'GET /api/team': return void readTeam(res)
@@ -312,10 +378,22 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
 
         return sendText(res, pathname.startsWith('/api/') ? 404 : 405, pathname.startsWith('/api/') ? 'no such endpoint' : 'method not allowed')
     }
+  }
+
+  const server = http.createServer((req, res) => {
+    if (!LOOPBACK_ADDRESS.has(req.socket.remoteAddress)) return sendText(res, 403, 'local only')
+    if (!LOOPBACK_HOST.test(req.headers.host ?? '')) return sendText(res, 403, 'bad host')
+    if (req.method === 'POST' && req.headers.origin !== undefined && req.headers.origin !== `http://${req.headers.host}`) {
+      return sendText(res, 403, 'cross-origin requests are refused')
+    }
+
+    return handle(req, res)
   })
+  const phone = createPhoneShare({ handle })
 
   return {
     server,
+    phone,
     hub,
     team,
     project,
@@ -341,14 +419,19 @@ export function createServer({ projectDir = process.cwd(), collections = [], hom
       }
 
       url = `http://${host}:${server.address().port}`
-      if (discovery) await writeDiscovery(project, { app: 'agent-office', url, version: VERSION, project, startedAt: now() })
+      if (discovery) {
+        await writeDiscovery(project, { app: 'agent-office', url, version: VERSION, project, startedAt: now() })
+        await register(registry, { url, project, version: VERSION, startedAt: now() })
+      }
 
       return url
     },
 
     async close() {
+      await phone.disable()
       for (const client of clients) client.end()
       await removeDiscovery(project).catch(() => {})
+      await unregister(registry, project)
       await new Promise((resolve) => server.close(() => resolve()))
     },
   }
