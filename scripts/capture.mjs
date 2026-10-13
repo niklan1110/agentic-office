@@ -19,7 +19,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const SHOTS = [
   { name: 'office-light', theme: 'studio', url: '/?from=setup&speed=6', w: 1400, h: 820, scale: 1.5, wait: 9000 },
   { name: 'office-dark', theme: 'night', url: '/?from=setup&speed=6', w: 1400, h: 820, scale: 1.5, wait: 9000 },
-  { name: 'social-preview', theme: 'neon', url: '/?from=setup&speed=6&clean', w: 1280, h: 640, scale: 1, wait: 9000, format: 'jpeg' },
   { name: 'themes-studio', theme: 'studio', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
   { name: 'themes-night', theme: 'night', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },
   { name: 'themes-cabin', theme: 'cabin', url: '/?from=setup&speed=6&clean', w: 1000, h: 620, scale: 1, wait: 8000 },

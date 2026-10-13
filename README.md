@@ -25,6 +25,11 @@ Build a team of agents from skills, launch it into your project, and see who is 
 > [!NOTE]
 > Agent Office runs only on your computer. There is no account, no cloud and no build step. It needs Node 22+ and [Claude Code](https://claude.com/claude-code) in VS Code, the terminal or the desktop app. Claude Code on the web is not supported.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/divider-dark.svg">
+  <img alt="" src="docs/media/divider-light.svg" width="900">
+</picture>
+
 ## Quick start
 
 Choose one of two ways:
@@ -51,9 +56,14 @@ Then, in the browser:
 2. **Launch.** Each agent becomes a Claude Code subagent in `.claude/agents/`, with its skills preloaded.
 3. **Watch.** Give the team work in the office or in any Claude Code session ("Have ada build the sign-up form, then qa test it"), and the office comes alive.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/divider-dark.svg">
+  <img alt="" src="docs/media/divider-light.svg" width="900">
+</picture>
+
 ## Features
 
-### A team in two minutes
+### <img src="docs/media/icon-team.svg" width="36" height="36" align="absmiddle" alt=""> A team in two minutes
 
 <img src="docs/media/setup-new-agent.webp" width="900" alt="The new agent picker: role cards for developer, code reviewer, QA tester, researcher, designer, DevOps engineer, writer, analyst and security auditor, each with its usual skills">
 
@@ -61,11 +71,13 @@ Then, in the browser:
 - **Skills grouped by area.** Planning, web, design, backend, testing, security, DevOps, AI agents and more. Each skill comes with a one-line description, and a Suggested tab shows what fits the role.
 - **What Claude sees.** A preview shows exactly how Claude will read each agent when deciding who gets a task.
 
-### Skills from anywhere
+### <img src="docs/media/icon-skills.svg" width="36" height="36" align="absmiddle" alt=""> Skills from anywhere
 
 Found a skill on GitHub? Click **Add skills**, then paste a link to a repository, a folder or a `SKILL.md`, or drop a `.zip`. Pick the skills you want. They go into your personal library (`~/.agent-office/skills`) and show up in every project.
 
-### Six layouts
+<a id="six-layouts"></a>
+
+### <img src="docs/media/icon-layouts.svg" width="36" height="36" align="absmiddle" alt=""> Six layouts
 
 <table>
   <tr>
@@ -82,7 +94,7 @@ Found a skill on GitHub? Click **Add skills**, then paste a link to a repository
 
 Pick the floor plan for your team: an open plan, desks in pairs, a Matrix-style cubicle farm, glass-walled private offices, round tables or one long bench. Each layout also rearranges the manager's office, the conference room, the kitchen and the lounge, and agents find their way to their own seats in every one.
 
-### Six colour themes, or your own
+### <img src="docs/media/icon-themes.svg" width="36" height="36" align="absmiddle" alt=""> Six colour themes, or your own
 
 <table>
   <tr>
@@ -99,7 +111,7 @@ Pick the floor plan for your team: an open plan, desks in pairs, a Matrix-style 
 
 Any layout works with any colours, and you can pick your own colours for the walls, floor and partitions on top of a theme. **Look** in the office also switches the characters between Classic (blocky, flat black eyes) and Bots (screen faces with glowing eyes). Change it all when you launch, or any time from **Look**. Press <kbd>H</kbd> to hide the controls for a clean screenshot like these.
 
-### Every office, and your phone
+### <img src="docs/media/icon-offices.svg" width="36" height="36" align="absmiddle" alt=""> <img src="docs/media/icon-phone.svg" width="36" height="36" align="absmiddle" alt=""> Every office, and your phone
 
 <img src="docs/media/phone.webp" width="240" align="right" alt="The office on a phone, showing the whole floor and the agents' name tags">
 
@@ -108,6 +120,11 @@ Any layout works with any colours, and you can pick your own colours for the wal
 - **The office in the browser** works with touch and on small screens. It draws lighter on phones and pauses in hidden tabs.
 
 <br clear="right">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/divider-dark.svg">
+  <img alt="" src="docs/media/divider-light.svg" width="900">
+</picture>
 
 ## Controls
 
@@ -119,6 +136,11 @@ Any layout works with any colours, and you can pick your own colours for the wal
 | **Call meeting** | Brief the team and send the task to Claude Code |
 | **Look** · **Phone** · **Offices** | Layout and colours, watch from your phone, all your offices |
 | `/office` in Claude Code | What this session sees, and what to fix |
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/divider-dark.svg">
+  <img alt="" src="docs/media/divider-light.svg" width="900">
+</picture>
 
 ## Troubleshooting
 
@@ -180,6 +202,11 @@ The plugin's options are under `/plugin` → agent-office → configure. Leave *
 - `agent-office/`, the theme and the running server's address.
 
 </details>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/divider-dark.svg">
+  <img alt="" src="docs/media/divider-light.svg" width="900">
+</picture>
 
 ## Share your office
 
